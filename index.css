@@ -1,0 +1,87 @@
+#app {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.story-text p {
+  margin-bottom: 1.5rem;
+  line-height: 1.75;
+}
+
+.story-text p:last-child {
+  margin-bottom: 0;
+}
+
+.story-text p.dialogue {
+    color: #e2e8f0; /* Lighter color for dialogue - slate-200 */
+}
+
+.story-text p.dialogue strong {
+    color: #fcd34d; /* Amber-300 for speaker name */
+    font-weight: bold;
+}
+
+.story-text p.abyss {
+    border-left: 3px solid #b45309; /* Amber-700 */
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+    color: #a8a29e; /* Stone-400 */
+    background-color: rgba(10, 10, 10, 0.2);
+    font-size: 0.95em;
+}
+
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 1.5s ease-in-out;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.glow-button {
+  position: relative;
+  overflow: hidden;
+  --glow-color: rgb(255, 220, 150);
+}
+
+.glow-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, 
+    rgba(255, 220, 150, 0.4) 0%, 
+    rgba(255, 220, 150, 0.2) 40%,
+    rgba(255, 220, 150, 0) 70%
+  );
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease, opacity 0.6s ease;
+  z-index: 0;
+  border-radius: 50%;
+}
+
+.glow-button:hover::before {
+  width: 400px;
+  height: 400px;
+}
+
+.glow-button:disabled::before {
+    opacity: 0;
+}
+
+.story-text::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 150px;
+  background: linear-gradient(to bottom, rgba(22, 22, 26, 0), rgb(28 25 23));
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+}
