@@ -14,12 +14,50 @@
 
 .story-text p.dialogue {
     color: #e2e8f0; /* Lighter color for dialogue - slate-200 */
+    border-left: 3px solid #44403c; /* stone-700 */
+    padding-left: 1rem;
+    margin-left: 0.5rem;
 }
 
 .story-text p.dialogue strong {
-    color: #fcd34d; /* Amber-300 for speaker name */
+    color: #fcd34d; /* Amber-300 for speaker name - default */
     font-weight: bold;
 }
+
+/* --- Character Styles --- */
+
+/* Selene - Red */
+.story-text p.speaker-selene {
+    border-left-color: #7f1d1d; /* red-800 */
+}
+.story-text p.speaker-selene strong {
+    color: #f87171; /* red-400 */
+}
+
+/* Lyra - Purple */
+.story-text p.speaker-lyra {
+    border-left-color: #581c87; /* purple-900 */
+}
+.story-text p.speaker-lyra strong {
+    color: #c084fc; /* purple-400 */
+}
+
+/* Mara - Cyan */
+.story-text p.speaker-mara {
+    border-left-color: #155e75; /* cyan-800 */
+}
+.story-text p.speaker-mara strong {
+    color: #67e8f9; /* cyan-300 */
+}
+
+/* Aveena - Green */
+.story-text p.speaker-aveena {
+    border-left-color: #14532d; /* green-900 */
+}
+.story-text p.speaker-aveena strong {
+    color: #86efac; /* green-300 */
+}
+
 
 .story-text p.abyss {
     border-left: 3px solid #b45309; /* Amber-700 */
