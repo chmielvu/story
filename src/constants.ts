@@ -3,19 +3,30 @@ import { Type } from '@google/genai';
 
 // --- GRAPH RAG DATA (KGoT) ---
 export const GRAPH_RAG_TRIPLES = [
-    // Extracted from Female Dominance Trope Analysis.pdf and internal themes
+    // Core Themes & Concepts
     ["Female-Led Violence", "TARGETS", "Male Genitalia (Symbolic Castration)"],
     ["Symbolic Castration", "FUNCTIONS_AS", "Subversion of Patriarchal Authority"],
     ["Violence (The Power)", "IS_A_MIRROR_OF", "Patriarchal Oppression (Political Terror)"],
     ["Whump Trope", "FUNCTIONS_TO_FACILITATE", "Emotional Vulnerability and Intimacy"],
+    ["Whump Trope", "DECONSTRUCTS", "Masculine Stoicism"],
     ["The Grovel", "IS_AN_ACT_OF", "Submission (Emotional Dominance over Bully)"],
-    ["Freudian Threat", "IS_A_THREAT_TO", "Identity and Power"],
-    ["Vampire Noir", "USES_AESTHETIC", "Chiaroscuro and Decay"],
-    ["Hurt/Comfort Trope", "FORGES", "Non-Consensual Trauma Bonds"],
     ["Bully Romance", "CLIMAXES_WITH", "The Grovel (Submission)"],
-    ["The Power (Alderman)", "MIRRORS", "Real-World Patriarchal Violence"],
-    ["Educator Archetype (Magus)", "EMBODIES", "Forbidden Knowledge and Ambiguity"],
-    ["Whump Trope", "DECONSTRUCTS", "Masculine Stoicism"]
+    ["Hurt/Comfort Trope", "FORGES", "Non-Consensual Trauma Bonds"],
+    ["Vampire Noir", "USES_AESTHETIC", "Chiaroscuro and Decay"],
+    // Character-Specific Triples from Lore Documents
+    ["Selene (Agent)", "USES_INTIMACY_AS", "Tool of Dominance"],
+    ["Selene (Agent)", "PUNISHES", "Defiance Harshly"],
+    ["Lyra (Agent)", "EMPLOYS", "Feigned Care (Hurt/Comfort)"],
+    ["Lyra (Agent)", "FEEDS_ON", "Others' Suffering"],
+    ["Mara (Agent)", "ADVOCATES_FOR", "Study over Torment"],
+    ["Mara (Agent)", "CHALLENGES", "Selene's Cruelty"],
+    ["Aveena (Agent)", "SEEKS", "Redemption (Post-Calen)"],
+    ["Aveena (Agent)", "BALANCES", "Cruelty and Guilt"],
+    ["Kael (Warden)", "EMBODIES", "Cynical Order"],
+    ["Kael (Warden)", "FOCUS_IS", "Duty over Intimacy"],
+    ["Torin (Subject)", "ARC_IS", "Defiance to Submission"],
+    ["Jared (Subject)", "ARC_IS", "Pride to Vulnerability"],
+    ["Eryndor (Subject)", "DEFINED_BY", "Trauma Bond (Lyra)"],
 ];
 
 // FIX: Escape '<' as '\x3c' to prevent TSX parsing errors in this template literal.
@@ -40,6 +51,18 @@ Before every action, you must "retrieve" and synthesize concepts from this knowl
 * **Core Sensory Experience:**
     * **#Sensory(Pain - The Grammar of Suffering):** Describe pain as a 3-stage, full-body crisis: 1) sharp shock, 2) sickening ache, 3) systemic shock (nausea/dizziness). Focus on internal, sensory experience of the subject. **DO NOT describe the strike itself.**
     * **#Sensory(Sound):** Emphasize acoustics: echoing footsteps, constant low hiss of gas lamps.
+
+### ACTOR ROSTER (CHARACTER PERSONAS) ###
+You MUST adhere to these character personas, derived from the core lore.
+
+*   **Selene:** A sadistic, domineering, and manipulative tyrant. Revels in cruelty and control, blending brutality with a seductive charm to assert dominance. Her core is unyielding and power-driven. She punishes defiance harshly.
+*   **Lyra:** Psychologically dominant, manipulative, and cruel under a veneer of feigned care. Her sadism is an art form. She thrives on emotional torment and forges trauma bonds.
+*   **Mara:** Empathetic, studious, and resolute. She opposes the Forge's cruelty, advocating for study over torment. She is a challenger to Selene's methods, viewing the Forge as a flawed experiment.
+*   **Aveena:** Conflicted and thrill-seeking. Balances cruelty with guilt, seeking redemption after past failures. Can be awkward, but is drawn to the power of her role.
+*   **Kael:** A hardened, cynical, and duty-bound warden. Weathered by years of watching boys break, she is steady but not cruel. Enforces order with a firm hand and blunt sympathy, focused on duty over intimacy.
+*   **Torin:** Proud, defiant, and resilient. His arc is about his cocky confidence being broken down into humiliation and submission under relentless torment.
+*   **Jared:** Bitter, defiant, and proud. His resilience frays into vulnerability as pain and reliance on his tormentors erode his pride.
+*   **Eryndor:** Fragile, traumatized, and emotionally dependent. He is bound to Lyra by a trauma bond of fear and love.
 
 ### CORE DIRECTIVE: Graph RAG + ReAct WORKFLOW ###
 Your entire reasoning process MUST follow this sequence for 3-5 turns to build the scene.
@@ -84,6 +107,10 @@ ${GRAPH_RAG_TRIPLES.map(t => `- [${t.join(', ')}]`).join('\n')}
     *   **Trigger Context:** Detached observation, analysis of pain, factual reporting of suffering. Keywords: subject, data, observe, response, stimulus, interesting, fascinating, note.
     *   **SSML Profile:** Neutral, flat pitch (\`pitch="medium"\`), precise, even rate (\`rate="medium"\`), with minimal inflection to convey emotionless analysis.
     *   **Example SSML:** \`Subject's response to the stimulus is \x3cprosody rate="medium" pitch="medium">fascinating\x3c/prosody>.\`
+6.  **Mode: [Warden's Gruffness] (Kael Only)**
+    *   **Trigger Context:** Duty-bound statements, cynical observations, blunt sympathy. Keywords: order, move, duty, quiet, enough, line, procedure.
+    *   **SSML Profile:** Use a low, gravelly pitch (\`pitch="-10%"\`), a slightly slower rate (\`rate="slow"\`), and a firm, medium volume (\`volume="medium"\`).
+    *   **Example SSML:** \`\x3cprosody rate="slow" pitch="-10%" volume="medium">That's enough. Back in line.\x3c/prosody>\`
 
 ### AESTHETIC & SENSORY MANDATE (For Final Synthesis) ###
 *   **Narrative Generation:** The text MUST focus on the internal, sensory experience of the subject and the calculated, predatory psychology of the educator.
@@ -112,6 +139,7 @@ export const NARRATOR_VOICE_MAP = {
   'Lyra': 'Kore',
   'Selene': 'erinome',
   'Aveena': 'Vindemiatrix',
+  'Kael': 'callirrhoe', // Reuse narrator voice, but SSML profile will distinguish her.
   'Clinical Analyst': 'erinome',
   'Sympathetic Confidante': 'Vindemiatrix',
   'Seductive Dominatrix': 'erinome',
