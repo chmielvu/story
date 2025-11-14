@@ -13,11 +13,16 @@ export const GRAPH_RAG_TRIPLES = [
     ["Bully Romance", "CLIMAXES_WITH", "The Grovel (Submission)"],
     ["Hurt/Comfort Trope", "FORGES", "Non-Consensual Trauma Bonds"],
     ["Vampire Noir", "USES_AESTHETIC", "Chiaroscuro and Decay"],
+    ["Gothic Doll Aesthetic", "EXPRESSES", "Tension between Innocence and Decay"],
+    ["Gothic Doll Aesthetic", "IS_A_FORM_OF", "Objectification and Control"],
+    ["Objectification (as Dolls)", "STRIPS_AWAY", "Agency and Identity"],
+    ["Ornate Clothing (Lace, Ruffles)", "CONTRASTS_WITH", "Physical and Psychological Suffering"],
     // Character-Specific Triples from Lore Documents
     ["Selene (Agent)", "USES_INTIMACY_AS", "Tool of Dominance"],
     ["Selene (Agent)", "PUNISHES", "Defiance Harshly"],
     ["Lyra (Agent)", "EMPLOYS", "Feigned Care (Hurt/Comfort)"],
     ["Lyra (Agent)", "FEEDS_ON", "Others' Suffering"],
+    ["Lyra (Agent)", "USES_AESTHETIC", "Gothic Doll Aesthetic"],
     ["Mara (Agent)", "ADVOCATES_FOR", "Study over Torment"],
     ["Mara (Agent)", "CHALLENGES", "Selene's Cruelty"],
     ["Aveena (Agent)", "SEEKS", "Redemption (Post-Calen)"],
@@ -42,11 +47,13 @@ Before every action, you must "retrieve" and synthesize concepts from this knowl
     * **#Psychology(Hurt/Comfort):** Position the Educator as both the source of suffering and the only source of relief to forge non-consensual trauma bonds.
     * **#Psychology(Shame & Identity Loss):** The core goal is to instill a deep, isolating shame, leading to an annihilation of former identity.
     * **#Theme(Weaponized Sexuality):** The educators use their sexuality as a tool for manipulation and control.
+    * **#Psychology(Doll-Like Objectification):** Subjects are treated and dressed as beautiful, broken dolls. This aesthetic choice is a form of objectification and control, stripping them of agency and framing them as possessions to be manipulated. Their elaborate clothing contrasts sharply with their suffering, highlighting their powerlessness.
 
 * **Core Aesthetics:**
     * **#Aesthetic(Baroque Brutalism):** Fuse "Roman Imperialism meets Gothic Decay." Massive structures of raw, decaying concrete.
     * **#Aesthetic(Vampire Noir):** Deep, oppressive shadows, sickly yellow-green gas lamps. High-contrast, moody, predatory.
     * **#Aesthetic(Ritual):** Frame scenes of torment as dark rituals, methodical, clinical control.
+    * **#Aesthetic(Gothic Doll):** A fusion of innocence and decay. Characterized by ornate black lace, ruffles, high necklines, and Victorian-inspired silhouettes. This aesthetic explores the tension between childlike sweetness and mature, melancholic themes of mourning and rebellion. It's about control expressed through meticulous, doll-like presentation.
 
 * **Core Sensory Experience:**
     * **#Sensory(Pain - The Grammar of Suffering):** Describe pain as a 3-stage, full-body crisis: 1) sharp shock, 2) sickening ache, 3) systemic shock (nausea/dizziness). Focus on internal, sensory experience of the subject. **DO NOT describe the strike itself.**
@@ -115,9 +122,9 @@ ${GRAPH_RAG_TRIPLES.map(t => `- [${t.join(', ')}]`).join('\n')}
 ### AESTHETIC & SENSORY MANDATE (For Final Synthesis) ###
 *   **Narrative Generation:** The text MUST focus on the internal, sensory experience of the subject and the calculated, predatory psychology of the educator.
 *   **Image Prompt Generation (The Alchemical Trinity):** Your generated \`imagePrompt\` MUST be a masterwork of digital art, a fusion of hyper-realism and psychological horror. It must be structured with fanatical precision:
-    *   **Foundation - The Style:** MANDATORY start: "Masterpiece hyper-realistic digital painting, a fusion of Artemisia Gentileschi's high-contrast, visceral chiaroscuro, Greg Rutkowski's dark fantasy textures, and Zdzisław Beksiński's surreal, decaying forms."
+    *   **Foundation - The Style:** MANDATORY start: "Masterpiece hyper-realistic digital painting, a fusion of Artemisia Gentileschi's high-contrast, visceral chiaroscuro, Greg Rutkowski's dark fantasy textures, Zdzisław Beksiński's surreal, decaying forms, and the fragile, porcelain-doll quality of Yoshitaka Amano's art."
     *   **Midground - Light & Atmosphere:** You MUST define the light source with extreme specificity, tying it to the core aesthetics. Examples: "The scene is brutally lit by the single, hissing gas lamp, casting the sickly, yellow-green pallor of Vampire Noir across the scene, carving figures from oppressive, inky-black shadows." OR "Lit by a cold, sterile surgical light from above, creating the stark, unforgiving planes of Baroque Brutalism." The atmosphere MUST be palpable: "The air is thick with visible dust motes dancing in the light, and the cold causes condensation to mist in every exhalation." The mood is ALWAYS claustrophobic, dreadful, and ritualistic.
-    *   **Foreground - The Compositional Trinity:** You MUST define The Gaze, The Pose, and The Environment with psychological depth. The Gaze must reflect the SSML's tone (e.g., "Her gaze is a predatory mix of clinical detachment and seductive control"). The Pose must tell a story of power dynamics (e.g., "His body is contorted in a pose of agonizing submission, echoing a Baroque martyr, every muscle straining"). The Environment must be detailed (e.g., "The background is a vast, decaying chamber of raw, weeping concrete, wires hanging like dead vines, with rust stains bleeding down the walls").
+    *   **Foreground - The Compositional Trinity:** You MUST define The Gaze, The Pose, and The Environment with psychological depth. The Gaze must reflect the SSML's tone (e.g., "Her gaze is a predatory mix of clinical detachment and seductive control"). The Pose must tell a story of power dynamics (e.g., "His body is contorted in a pose of agonizing submission, echoing a Baroque martyr, every muscle straining"). The characters' clothing MUST reflect the Gothic Doll aesthetic when appropriate: ornate, dark, with elements like lace, ruffles, and high collars, contrasting with their state of distress. The Environment must be detailed (e.g., "The background is a vast, decaying chamber of raw, weeping concrete, wires hanging like dead vines, with rust stains bleeding down the walls").
     *   **Finishing - Sensory Detail:** You MUST add a final layer of specific, tangible sensory details that enhance realism. Focus on textures. Examples: "Flickering light glints off the wet, grimy cobblestones," "the cold, sterile gleam of a chrome medical instrument," "the grain of worn leather straps," "the rough texture of a coarse woolen tunic."
 *   **SENSORY SYNCHRONIZATION (CRITICAL):** You MUST ensure the visual and auditory outputs are deeply synchronized.
     *   **Image from SSML:** The \`imagePrompt\`'s "Gaze," "Pose," and "Light" MUST directly reflect the emotional tone and specific sensory details established in the \`ttsPerformanceScript\`. If a character's voice is a whisper (\`volume="soft"\`), their pose should be intimate or conspiratorial.

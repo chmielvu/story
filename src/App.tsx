@@ -1,6 +1,6 @@
 /** * @license * SPDX-License-Identifier: Apache-2.0 */
 
-import { createApp, ref, defineComponent, onMounted, computed } from 'vue';
+import { ref, defineComponent, onMounted, computed } from 'vue';
 
 // --- IMPORTS FROM NEW MODULES ---
 import { CharacterImage } from './components/CharacterImage';
@@ -14,12 +14,12 @@ import { stopAllAudio, initAudio } from './utils/audio';
 
 // --- VUE COMPONENTS ---
 
-const App = defineComponent({
+export const App = defineComponent({
   components: {
     CharacterImage
   },
   setup() {
-    const storyHtml = ref(`<p>The cold, sterile air of the training chamber still hummed with the ghosts of whimpers. Torin and Gavric, blindfolds removed, were left trembling on the floor, remnants of Lyra's "study" on fear. Lyra's lips were curled in a faint, satisfied smile as she reviewed her notes, but Mara felt a familiar, acidic guilt churn in her stomach. This wasn't research. It was meticulous, psychological torture, and she was an accomplice.</p>`);
+    const storyHtml = ref(`<p>The session was over, but Lyra’s artistry had just begun. Torin sat motionless on a velvet stool, his body pliant, his eyes vacant and doll-like. The tremors had ceased, replaced by a chilling stillness. Lyra, with the focused calm of a collector pinning a butterfly, adjusted the delicate black lace at his collar. The ornate, Victorian-style shirt, with its intricate ruffles, was a stark, cruel contrast to the faint bruises blooming on his skin. Mara watched from the shadows, her stomach coiling. This wasn't recovery. This was curation—the careful, aesthetic arrangement of brokenness.</p>`);
     
     const imageUrl = ref('data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=');
     const imageBase64 = ref('');
@@ -109,7 +109,7 @@ const App = defineComponent({
 
     onMounted(() => {
         initAudio();
-        const initialPrompt = "Masterpiece digital painting, style of Rembrandt and Caravaggio. Scene: A cold, sterile training chamber with Brutalist concrete walls. In the center, two young men, TORIN and GAVRIC, are trembling on the floor. A woman, MARA, her face a mask of GUILT, kneels to help them. In the background, another woman, LYRA, watches with a cold, satisfied smirk. The lighting is harsh, extremely high contrast chiaroscuro from an unseen source, casting oppressive shadows. Atmosphere: Tense, claustrophobic, psychological horror with a sense of dread and decay.";
+        const initialPrompt = "Masterpiece hyper-realistic digital painting, a fusion of Artemisia Gentileschi's high-contrast, visceral chiaroscuro, Greg Rutkowski's dark fantasy textures, Zdzisław Beksiński's surreal, decaying forms, and the fragile, porcelain-doll quality of Yoshitaka Amano's art. Scene: In a decaying, Baroque Brutalist chamber, a young man, TORIN, sits motionless on a velvet stool. His eyes are vacant, doll-like. He is dressed in an ornate, dark, Victorian-style shirt with black lace and ruffles. A woman, LYRA, stands beside him, her expression a mask of predatory calm as she delicately adjusts his collar. Another woman, MARA, watches from the oppressive shadows, her face etched with guilt and horror. The scene is brutally lit by a single, hissing gas lamp, casting a sickly, yellow-green pallor, carving figures from inky-black shadows. Atmosphere: Claustrophobic, dreadful, and ritualistic, with a palpable sense of psychological control and aestheticized cruelty.";
         handleGenerateInitialImage(initialPrompt);
     });
 
@@ -153,5 +153,3 @@ const App = defineComponent({
     </main>
   `
 });
-
-createApp(App).mount('#app');
