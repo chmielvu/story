@@ -1,7 +1,7 @@
 // src/utils/parser.ts
 
 import { performAndSynthesizeAudio } from '../api/gemini';
-import { audioState, initAudio, stopAllAudio } from './audio';
+import { initAudio, stopAllAudio, queueAudio } from './audio';
 
 // --- HTML & SSML PARSING LOGIC ---
 
@@ -21,7 +21,7 @@ export function parseSSMLToHTML(scriptSource: string): string {
         .replace(/<\/?(speak|prosody)[^>]*>/g, '');
 }
 
-export async function parseAndPlayScript(script: string): Promise<void> {
+export async function parseAndPlayScript(script: string, narratorVoice: string): Promise<void> {
     initAudio();
     stopAllAudio();
     
@@ -37,12 +37,14 @@ export async function parseAndPlayScript(script: string): Promise<void> {
     for (const node of Array.from(speakNode.childNodes)) {
         if (!(node instanceof Element)) continue;
 
-        let voiceKey = 'narrator';
+        let voiceKey: string;
         
         if (node.nodeName === 'break') {
             const timeStr = node.getAttribute('time') || '1s';
             const seconds = parseFloat(timeStr);
-            if (!isNaN(seconds)) audioState.nextStartTime += seconds;
+            if (!isNaN(seconds)) {
+                queueAudio({ type: 'pause', duration: seconds });
+            }
             continue;
         }
         
@@ -50,9 +52,9 @@ export async function parseAndPlayScript(script: string): Promise<void> {
         const ssmlFragment = node.innerHTML;
         
         if (node.nodeName === 'narrator') {
-            voiceKey = 'narrator';
+            voiceKey = narratorVoice;
         } else if (node.nodeName === 'dialogue') {
-            voiceKey = node.getAttribute('speaker') || 'narrator';
+            voiceKey = node.getAttribute('speaker') || narratorVoice;
         } else if (node.nodeName === 'abyss') {
             voiceKey = node.getAttribute('mode') || 'Clinical Analyst';
         } else {

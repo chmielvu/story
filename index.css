@@ -1,34 +1,18 @@
 /* --- THEME DEFINITIONS --- */
-:root, .theme-dark {
-  --color-background: #000000;
-  --color-surface-primary: rgba(24, 24, 27, 0.8); /* zinc-950/80 */
-  --color-surface-secondary: #18181b; /* zinc-900 */
-  --color-text-primary: #d4d4d8; /* zinc-300 */
-  --color-text-secondary: #e2e8f0; /* slate-200 for dialogue */
-  --color-text-muted: rgba(254, 243, 199, 0.8); /* amber-100/80 */
-  --color-border-primary: #27272a; /* zinc-800 */
-  --color-border-secondary: #3f3f46; /* zinc-700 */
-  --color-accent-primary: #fcd34d; /* amber-300 */
-  --color-accent-secondary: #f59e0b; /* amber-500 */
-  --color-accent-glow-rgb: 252, 211, 77; /* amber-400 */
-  --shadow-color: rgba(0, 0, 0, 0.5);
-}
-
-.theme-dark-academia {
+:root {
   --color-background: #1a1510; /* Dark, warm brown */
-  --color-surface-primary: rgba(41, 32, 25, 0.8); /* Darker sepia with blur */
+  --color-surface-primary: rgba(41, 32, 25, 0.85); /* Darker sepia with blur, slightly more opaque */
   --color-surface-secondary: #292019; /* Dark sepia */
   --color-text-primary: #d1c7b7; /* Parchment */
   --color-text-secondary: #e0d9cc; /* Lighter Parchment */
-  --color-text-muted: rgba(197, 157, 95, 0.8); /* Muted gold */
+  --color-text-muted: rgba(197, 157, 95, 0.9); /* Muted gold, more opaque */
   --color-border-primary: #4a3c2f; /* Darker brass */
   --color-border-secondary: #5c4b3a; /* Brass */
   --color-accent-primary: #c59d5f; /* Burnished Gold */
   --color-accent-secondary: #e6bf8a; /* Lighter Gold */
   --color-accent-glow-rgb: 197, 157, 95; /* Gold */
-  --shadow-color: rgba(10, 5, 0, 0.5);
+  --shadow-color: rgba(10, 5, 0, 0.6); /* Deeper shadow for more depth */
 }
-
 
 body {
   background-color: var(--color-background);
@@ -39,6 +23,17 @@ body {
 #app {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.story-text {
+  transition: opacity 0.8s ease-in-out, filter 0.8s ease-in-out;
+}
+
+.story-text.story-transitioning {
+  opacity: 0.2;
+  filter: blur(4px);
+  /* Prevents user from selecting text during transition */
+  pointer-events: none; 
 }
 
 .story-text p {
@@ -192,51 +187,4 @@ body {
   left: 0;
   pointer-events: none;
   transition: background 0.5s ease;
-}
-
-/* -- Theme Toggle Switch -- */
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-.theme-toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 26px;
-}
-.theme-toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--color-surface-secondary);
-  transition: .4s;
-  border-radius: 26px;
-  border: 1px solid var(--color-border-primary);
-}
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: var(--color-accent-primary);
-  transition: .4s;
-  border-radius: 50%;
-}
-input:checked + .slider {
-  background-color: var(--color-surface-secondary);
-}
-input:checked + .slider:before {
-  transform: translateX(24px);
 }

@@ -1,16 +1,24 @@
 /** * @license * SPDX-License-Identifier: Apache-2.0 */
 
-import { ref, defineComponent, onMounted, computed } from 'vue';
+import { ref, defineComponent, onMounted, computed, nextTick } from 'vue';
 
 // --- IMPORTS FROM NEW MODULES ---
 import { CharacterImage } from './components/CharacterImage';
 import { parseSSMLToHTML, parseAndPlayScript } from './utils/parser';
 import { 
-    continueStory, 
+    continueStoryStream, 
     generateInitialImage, 
     editImage 
 } from './api/gemini';
-import { stopAllAudio, initAudio } from './utils/audio';
+import { NARRATOR_VOICE_MAP, CHARACTER_IMAGE_PROMPTS, CHARACTER_DESCRIPTIONS } from './constants';
+import { stopAllAudio, initAudio, playTransitionSound } from './utils/audio';
+
+// --- TYPES ---
+interface CharacterPortrait {
+    imageUrl: string;
+    isLoading: boolean;
+    errorMessage: string;
+}
 
 // --- VUE COMPONENTS ---
 
@@ -19,164 +27,148 @@ export const App = defineComponent({
     CharacterImage
   },
   setup() {
-    const storyHtml = ref(`<p>The session was over, but Lyra’s artistry had just begun. Torin sat motionless on a velvet stool, his body pliant, his eyes vacant and doll-like. The tremors had ceased, replaced by a chilling stillness. Lyra, with the focused calm of a collector pinning a butterfly, adjusted the delicate black lace at his collar. The ornate, Victorian-style shirt, with its intricate ruffles, was a stark, cruel contrast to the faint bruises blooming on his skin. Mara watched from the shadows, her stomach coiling. This wasn't recovery. This was curation—the careful, aesthetic arrangement of brokenness.</p>`);
-    
-    const imageUrl = ref('data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=');
-    const imageBase64 = ref('');
-    const imageMimeType = ref('image/jpeg');
-    
-    const isLoadingStory = ref(false);
-    const isLoadingImage = ref(false);
-    const imageErrorMessage = ref('');
-    const imageEditPrompt = ref('');
-    
+    const storyHtml = ref(`<p>The final, shuddering gasp had been wrenched from him minutes ago, but Selene was in no hurry. Jared stood braced against the mahogany desk, his knuckles white, his body a wrecked, sweat-slicked canvas of her artistry. The air in her study, thick with the scent of old leather and ozone from the storm raging outside, tasted of his humiliation.</p><p><dialogue speaker="Selene">"Breathe,"</dialogue> she commanded, her voice a low contralto that vibrated through the floorboards. She traced a single, manicured nail down the sweat-slicked channel of his spine. <dialogue speaker="Selene">"I'm not finished with my analysis."</dialogue></p>`);
     const storyContainer = ref<HTMLDivElement | null>(null);
+    const isLoading = ref(false);
+    const isTransitioning = ref(false);
+    const currentNarrationScript = ref('');
+    const narratorVoice = ref('narrator');
+    const characterPortraits = ref<Record<string, CharacterPortrait>>({
+      "Selene": { imageUrl: '', isLoading: true, errorMessage: '' },
+      "Jared": { imageUrl: '', isLoading: true, errorMessage: '' },
+    });
 
-    const isLoading = computed(() => isLoadingStory.value || isLoadingImage.value);
+    const isPlaying = computed(() => isLoading.value);
 
-    const theme = ref<'dark' | 'darkAcademia'>('dark');
-
-    const toggleTheme = () => {
-        const newTheme = theme.value === 'dark' ? 'darkAcademia' : 'dark';
-        theme.value = newTheme;
-        document.documentElement.className = `theme-${newTheme}`;
+    const getStoryTextOnly = () => {
+        const div = document.createElement('div');
+        div.innerHTML = storyHtml.value;
+        return div.textContent || div.innerText || '';
     };
 
-    const handleGenerateInitialImage = async (prompt: string) => {
-        isLoadingImage.value = true;
-        imageErrorMessage.value = '';
-        try {
-            const result = await generateInitialImage(prompt);
-            imageBase64.value = result.base64;
-            imageMimeType.value = result.mimeType;
-            imageUrl.value = result.imageUrl;
-        } catch (e) {
-            imageErrorMessage.value = e instanceof Error ? e.message : 'Unknown image generation error.';
-            console.error(imageErrorMessage.value);
-        } finally {
-            isLoadingImage.value = false;
-        }
-    };
+    const continueStory = async () => {
+        if (isLoading.value) return;
 
-    const handleEditImage = async () => {
-        if (!imageEditPrompt.value.trim() || !imageBase64.value) return;
-        isLoadingImage.value = true;
-        imageErrorMessage.value = '';
-        try {
-            const result = await editImage(imageBase64.value, imageMimeType.value, imageEditPrompt.value);
-            imageBase64.value = result.base64;
-            imageMimeType.value = result.mimeType;
-            imageUrl.value = result.imageUrl;
-            imageEditPrompt.value = '';
-        } catch (e) {
-            imageErrorMessage.value = e instanceof Error ? e.message : 'Unknown image editing error.';
-            console.error(imageErrorMessage.value);
-        } finally {
-            isLoadingImage.value = false;
-        }
-    };
+        // --- Start Transition ---
+        isLoading.value = true;
+        isTransitioning.value = true;
+        stopAllAudio();
+        playTransitionSound(); // Play audio cue
+        // ---------------------
 
-    const handleContinueStory = async () => {
-        isLoadingStory.value = true;
-        stopAllAudio(); // Stop audio via utility function
+        currentNarrationScript.value = '';
 
-        try {
-            const continuationPoint = storyContainer.value?.innerText.trim().split('\n').pop() || '';
-            
-            // Call streamlined API function
-            const payload = await continueStory(continuationPoint);
+        let fullSsml = '';
+        let lastScrollHeight = 0;
+        let storyAddition = '';
 
-            // Update story text and image
-            const scriptSource = payload.ttsPerformanceScript.ssml;
-            
-            // Use utility function for HTML conversion
-            const newHtmlContent = parseSSMLToHTML(scriptSource);
+        await continueStoryStream({
+            continuationPoint: getStoryTextOnly(),
+            onTextChunk: (textChunk) => {
+                // --- End Transition on first chunk ---
+                if (isTransitioning.value) {
+                    isTransitioning.value = false;
+                }
+                // -----------------------------------
 
-            storyHtml.value += newHtmlContent;
+                fullSsml = `<speak>${textChunk}</speak>`;
+                const newHtml = parseSSMLToHTML(textChunk);
+                storyHtml.value += newHtml.substring(storyAddition.length);
+                storyAddition = newHtml;
 
-            // Use utility function for image generation
-            await handleGenerateInitialImage(payload.imagePrompt); 
-            
-            // Scroll to bottom
-            const storyEl = storyContainer.value;
-            if (storyEl) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                storyEl.scrollTo({ top: storyEl.scrollHeight, behavior: 'smooth' });
+                nextTick(() => {
+                    if (storyContainer.value && storyContainer.value.scrollHeight > lastScrollHeight) {
+                        storyContainer.value.scrollTop = storyContainer.value.scrollHeight;
+                        lastScrollHeight = storyContainer.value.scrollHeight;
+                    }
+                });
+            },
+            onMetadata: (metadata) => {
+                console.log("Metadata received:", metadata);
+                // Future enhancement: Update character portraits based on metadata.imagePrompt
+            },
+            onComplete: async () => {
+                currentNarrationScript.value = fullSsml;
+                await parseAndPlayScript(currentNarrationScript.value, narratorVoice.value);
+                isLoading.value = false;
+            },
+            onError: (error) => {
+                console.error("Story continuation error:", error);
+                isLoading.value = false;
+                isTransitioning.value = false; // Ensure transition state is reset on error
             }
-
-            // Use utility function for audio playback
-            await parseAndPlayScript(payload.ttsPerformanceScript.ssml);
-
-        } catch (error) {
-            console.error("Failed to continue story:", error);
-            storyHtml.value += `<p class="text-red-400">Error: The narrative faltered. The Alchemist seems to have stumbled. Check the console for details.</p>`;
-        } finally {
-            isLoadingStory.value = false;
-        }
+        });
     };
 
-    onMounted(() => {
+    onMounted(async () => {
         initAudio();
-        // Set initial theme
-        document.documentElement.className = 'theme-dark';
-        const initialPrompt = "Masterpiece hyper-realistic digital painting. The final image is an alchemical fusion that achieves a singular vision: the scholarly, oppressive elegance of Dark Academia; the grand, decaying scale of Baroque Brutalism; the intimate, predatory lighting of Vampire Noir; and the tragic, candlelit humanity of Georges de La Tour's art. The scene is a study in erotic dread, set within a vast, dimly lit private library. The atmosphere is one of suffocating, clinical sterility and predatory intimacy. The air is heavy with the scent of decaying leather, old paper, and the sharp, cloying smell of antiseptic. The silence is absolute, broken only by the subject's hitched, shallow breaths. The composition is a Baroque tableau of absolute female domination. A woman, LYRA, is the epicenter of power, poised with languid, almost bored ownership in a massive, decaying leather armchair. Her gaze is not merely a look but an act of psychological dissection—a piercing instrument of detached clinical interest, proprietary desire, and the faint, cruel amusement of a god examining a beautiful, yet disposable, specimen. Before her, a young man, TORIN, is a 'beautiful ruin,' his body a tense knot of agony and forced submission, contorted on the floor. His pristine Dark Academia clothing—a perfectly buttoned waistcoat—is a cruel mockery of his ruined state. This is a moment of pure objectification; he is not a person, but an aesthetic object of suffering. The detail that anchors this psycho-sexual horror is the terrifying intimacy of Lyra's action: one of her hands, relaxed and elegant, gently dances in the air just above Torin's groin. Her fingers trace patterns, never quite touching, yet promising an agony that makes his entire body tremble in anticipation. It is a gesture of absolute power, a clinical examination of his most vulnerable point, and the ultimate expression of his status as a helpless specimen.";
-        handleGenerateInitialImage(initialPrompt);
+        for (const name in characterPortraits.value) {
+            if (CHARACTER_IMAGE_PROMPTS[name]) {
+                try {
+                    const { imageUrl } = await generateInitialImage(CHARACTER_IMAGE_PROMPTS[name]);
+                    characterPortraits.value[name].imageUrl = imageUrl;
+                } catch (e) {
+                    characterPortraits.value[name].errorMessage = `Failed to generate portrait for ${name}.`;
+                    console.error(e);
+                } finally {
+                    characterPortraits.value[name].isLoading = false;
+                }
+            }
+        }
     });
 
     return {
       storyHtml,
-      imageUrl,
-      isLoading,
-      isLoadingStory,
-      isLoadingImage,
-      imageErrorMessage,
-      continueStory: handleContinueStory,
       storyContainer,
-      imageEditPrompt,
-      editImage: handleEditImage,
-      theme,
-      toggleTheme,
+      isLoading,
+      isPlaying,
+      characterPortraits,
+      isTransitioning,
+      continueStory,
+      stopAllAudio,
+      CHARACTER_DESCRIPTIONS,
     };
   },
+
   template: `
-    <main class="max-w-7xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
-      <div class="lg:sticky top-8 flex flex-col gap-4">
-        <div class="flex justify-between items-center">
-            <h1 class="text-4xl md:text-5xl font-serif text-accent-primary">The Forge's Loom</h1>
+    <div class="min-h-screen bg-background text-text-primary font-serif flex flex-col items-center p-4 sm:p-6 md:p-8">
+      <div class="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-            <!-- Theme Toggle Switch -->
-            <div class="flex items-center gap-3 font-serif text-sm text-text-muted">
-                <span>Dark</span>
-                <label class="theme-toggle">
-                    <div class="theme-toggle-switch">
-                    <input type="checkbox" :checked="theme === 'darkAcademia'" @change="toggleTheme">
-                    <span class="slider"></span>
-                    </div>
-                </label>
-                <span>Academia</span>
-            </div>
-        </div>
-        
-        <CharacterImage :image-url="imageUrl" :is-loading="isLoading" :error-message="imageErrorMessage" />
-        <div class="flex flex-col gap-2">
-            <label for="image-edit" class="text-sm font-serif text-text-muted">Image Alchemy:</label>
-            <div class="flex gap-2">
-                <input v-model="imageEditPrompt" id="image-edit" type="text" placeholder="e.g., Add a flickering gas lamp..." class="flex-grow bg-surface-secondary border border-border-secondary rounded-md px-3 py-2 text-text-primary focus:ring-accent-secondary focus:border-accent-secondary" :disabled="isLoading">
-                <button @click="handleEditImage" :disabled="isLoading || !imageEditPrompt.trim()" class="font-serif bg-surface-secondary text-accent-primary border border-accent-secondary/40 rounded-md px-4 py-2 hover:bg-border-secondary hover:border-accent-secondary disabled:opacity-50 transition">Edit Image</button>
-            </div>
-        </div>
+        <!-- Story Column -->
+        <main class="lg:col-span-8 bg-surface-primary/80 backdrop-blur-sm rounded-lg shadow-2xl overflow-hidden flex flex-col" :style="{ 'box-shadow': '0 25px 50px -12px var(--shadow-color)' }">
+          <div class="p-6 sm:p-8 border-b border-border-primary">
+            <h1 class="font-serif text-3xl sm:text-4xl text-accent-primary tracking-wider">The Forge's Loom</h1>
+            <p class="text-text-muted mt-2">An Interactive Narrative</p>
+          </div>
+          
+          <div ref="storyContainer" class="flex-grow p-6 sm:p-8 overflow-y-auto relative" style="max-height: 70vh;">
+            <transition name="fade" mode="out-in">
+              <div class="story-text text-text-secondary text-lg" :class="{ 'story-transitioning': isTransitioning }" v-html="storyHtml"></div>
+            </transition>
+          </div>
+
+          <div class="p-6 border-t border-border-primary bg-surface-secondary/50 flex items-center justify-center">
+            <button @click="continueStory" :disabled="isLoading" 
+                    class="glow-button relative z-10 w-full sm:w-auto px-10 py-4 bg-accent-primary/80 text-background font-bold rounded-md shadow-lg hover:bg-accent-secondary transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-surface-secondary flex items-center justify-center space-x-3">
+                <span v-if="!isLoading">Continue the Agony</span>
+                <div v-if="isLoading" class="flex items-center space-x-3">
+                    <div class="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin"></div>
+                    <span>Weaving Fate...</span>
+                </div>
+            </button>
+          </div>
+        </main>
+
+        <!-- Character Column -->
+        <aside class="lg:col-span-4 space-y-8">
+          <div v-for="(portrait, name) in characterPortraits" :key="name" class="bg-surface-primary/80 backdrop-blur-sm rounded-lg shadow-lg p-4">
+             <h2 class="font-serif text-2xl text-accent-secondary mb-3">{{ name }}</h2>
+             <CharacterImage :image-url="portrait.imageUrl" :is-loading="portrait.isLoading" :error-message="portrait.errorMessage" />
+             <p class="text-sm text-text-muted mt-3 p-2 bg-surface-secondary/50 rounded">{{ CHARACTER_DESCRIPTIONS[name] }}</p>
+          </div>
+        </aside>
+
       </div>
-      
-      <div class="flex flex-col h-full">
-        <div ref="storyContainer" class="story-text relative flex-grow bg-surface-primary backdrop-blur-sm border border-border-primary p-6 md:p-8 rounded-lg shadow-inner shadow-black/50 overflow-y-auto max-h-[80vh]">
-          <div v-html="storyHtml" class="font-sans text-lg"></div>
-        </div>
-        <div class="pt-6 text-center">
-          <button @click="handleContinueStory" :disabled="isLoading" class="glow-button relative font-serif text-xl bg-background text-accent-primary border-2 border-accent-secondary/50 rounded-lg px-12 py-4 shadow-lg hover:bg-surface-secondary hover:border-accent-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300">
-            <span class="relative z-10">{{ isLoadingStory ? 'Forging...' : 'Forge the Next Chapter' }}</span>
-          </button>
-        </div>
-      </div>
-    </main>
+    </div>
   `
 });
