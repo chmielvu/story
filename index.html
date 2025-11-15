@@ -26,6 +26,18 @@
       tailwind.config = {
         theme: {
           extend: {
+            colors: {
+              'background': 'var(--color-background)',
+              'surface-primary': 'var(--color-surface-primary)',
+              'surface-secondary': 'var(--color-surface-secondary)',
+              'text-primary': 'var(--color-text-primary)',
+              'text-secondary': 'var(--color-text-secondary)',
+              'text-muted': 'var(--color-text-muted)',
+              'border-primary': 'var(--color-border-primary)',
+              'border-secondary': 'var(--color-border-secondary)',
+              'accent-primary': 'var(--color-accent-primary)',
+              'accent-secondary': 'var(--color-accent-secondary)',
+            },
             fontFamily: {
               sans: "'Libre Baskerville', serif",
               serif: "'IM Fell English', serif",
@@ -35,7 +47,7 @@
       }
     </script>
 </head>
-<body class="bg-stone-900 text-stone-300">
+<body>
     <div id="app">
     </div>
     <script type="module" src="index.tsx"></script>

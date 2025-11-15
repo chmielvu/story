@@ -34,6 +34,14 @@ export const App = defineComponent({
 
     const isLoading = computed(() => isLoadingStory.value || isLoadingImage.value);
 
+    const theme = ref<'dark' | 'darkAcademia'>('dark');
+
+    const toggleTheme = () => {
+        const newTheme = theme.value === 'dark' ? 'darkAcademia' : 'dark';
+        theme.value = newTheme;
+        document.documentElement.className = `theme-${newTheme}`;
+    };
+
     const handleGenerateInitialImage = async (prompt: string) => {
         isLoadingImage.value = true;
         imageErrorMessage.value = '';
@@ -109,7 +117,9 @@ export const App = defineComponent({
 
     onMounted(() => {
         initAudio();
-        const initialPrompt = "Masterpiece hyper-realistic digital painting, a fusion of Artemisia Gentileschi's high-contrast, visceral chiaroscuro, Greg Rutkowski's dark fantasy textures, Zdzisław Beksiński's surreal, decaying forms, and the fragile, porcelain-doll quality of Yoshitaka Amano's art. Scene: In a decaying, Baroque Brutalist chamber, a young man, TORIN, sits motionless on a velvet stool. His eyes are vacant, doll-like. He is dressed in an ornate, dark, Victorian-style shirt with black lace and ruffles. A woman, LYRA, stands beside him, her expression a mask of predatory calm as she delicately adjusts his collar. Another woman, MARA, watches from the oppressive shadows, her face etched with guilt and horror. The scene is brutally lit by a single, hissing gas lamp, casting a sickly, yellow-green pallor, carving figures from inky-black shadows. Atmosphere: Claustrophobic, dreadful, and ritualistic, with a palpable sense of psychological control and aestheticized cruelty.";
+        // Set initial theme
+        document.documentElement.className = 'theme-dark';
+        const initialPrompt = "Masterpiece hyper-realistic digital painting. The final image is an alchemical fusion that achieves a singular vision: the scholarly, oppressive elegance of Dark Academia; the grand, decaying scale of Baroque Brutalism; the intimate, predatory lighting of Vampire Noir; and the tragic, candlelit humanity of Georges de La Tour's art. The scene is a study in erotic dread, set within a vast, dimly lit private library. The atmosphere is one of suffocating, clinical sterility and predatory intimacy. The air is heavy with the scent of decaying leather, old paper, and the sharp, cloying smell of antiseptic. The silence is absolute, broken only by the subject's hitched, shallow breaths. The composition is a Baroque tableau of absolute female domination. A woman, LYRA, is the epicenter of power, poised with languid, almost bored ownership in a massive, decaying leather armchair. Her gaze is not merely a look but an act of psychological dissection—a piercing instrument of detached clinical interest, proprietary desire, and the faint, cruel amusement of a god examining a beautiful, yet disposable, specimen. Before her, a young man, TORIN, is a 'beautiful ruin,' his body a tense knot of agony and forced submission, contorted on the floor. His pristine Dark Academia clothing—a perfectly buttoned waistcoat—is a cruel mockery of his ruined state. This is a moment of pure objectification; he is not a person, but an aesthetic object of suffering. The detail that anchors this psycho-sexual horror is the terrifying intimacy of Lyra's action: one of her hands, relaxed and elegant, gently dances in the air just above Torin's groin. Her fingers trace patterns, never quite touching, yet promising an agony that makes his entire body tremble in anticipation. It is a gesture of absolute power, a clinical examination of his most vulnerable point, and the ultimate expression of his status as a helpless specimen.";
         handleGenerateInitialImage(initialPrompt);
     });
 
@@ -123,29 +133,46 @@ export const App = defineComponent({
       continueStory: handleContinueStory,
       storyContainer,
       imageEditPrompt,
-      editImage: handleEditImage
+      editImage: handleEditImage,
+      theme,
+      toggleTheme,
     };
   },
   template: `
     <main class="max-w-7xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
       <div class="lg:sticky top-8 flex flex-col gap-4">
-        <h1 class="text-4xl md:text-5xl font-serif text-amber-50 text-center lg:text-left">The Forge's Loom</h1>
+        <div class="flex justify-between items-center">
+            <h1 class="text-4xl md:text-5xl font-serif text-accent-primary">The Forge's Loom</h1>
+        
+            <!-- Theme Toggle Switch -->
+            <div class="flex items-center gap-3 font-serif text-sm text-text-muted">
+                <span>Dark</span>
+                <label class="theme-toggle">
+                    <div class="theme-toggle-switch">
+                    <input type="checkbox" :checked="theme === 'darkAcademia'" @change="toggleTheme">
+                    <span class="slider"></span>
+                    </div>
+                </label>
+                <span>Academia</span>
+            </div>
+        </div>
+        
         <CharacterImage :image-url="imageUrl" :is-loading="isLoading" :error-message="imageErrorMessage" />
         <div class="flex flex-col gap-2">
-            <label for="image-edit" class="text-sm font-serif text-amber-100/70">Image Alchemy:</label>
+            <label for="image-edit" class="text-sm font-serif text-text-muted">Image Alchemy:</label>
             <div class="flex gap-2">
-                <input v-model="imageEditPrompt" id="image-edit" type="text" placeholder="e.g., Add a flickering gas lamp..." class="flex-grow bg-stone-800 border border-stone-600 rounded-md px-3 py-2 text-stone-200 focus:ring-amber-400 focus:border-amber-400" :disabled="isLoading">
-                <button @click="handleEditImage" :disabled="isLoading || !imageEditPrompt.trim()" class="font-serif bg-stone-700 text-amber-200 border border-amber-400/30 rounded-md px-4 py-2 hover:bg-stone-600 disabled:opacity-50 transition">Edit Image</button>
+                <input v-model="imageEditPrompt" id="image-edit" type="text" placeholder="e.g., Add a flickering gas lamp..." class="flex-grow bg-surface-secondary border border-border-secondary rounded-md px-3 py-2 text-text-primary focus:ring-accent-secondary focus:border-accent-secondary" :disabled="isLoading">
+                <button @click="handleEditImage" :disabled="isLoading || !imageEditPrompt.trim()" class="font-serif bg-surface-secondary text-accent-primary border border-accent-secondary/40 rounded-md px-4 py-2 hover:bg-border-secondary hover:border-accent-secondary disabled:opacity-50 transition">Edit Image</button>
             </div>
         </div>
       </div>
       
       <div class="flex flex-col h-full">
-        <div ref="storyContainer" class="story-text relative flex-grow bg-stone-950 p-6 md:p-8 rounded-lg shadow-inner shadow-black overflow-y-auto max-h-[80vh]">
-          <div v-html="storyHtml" class="font-sans text-stone-300 text-lg"></div>
+        <div ref="storyContainer" class="story-text relative flex-grow bg-surface-primary backdrop-blur-sm border border-border-primary p-6 md:p-8 rounded-lg shadow-inner shadow-black/50 overflow-y-auto max-h-[80vh]">
+          <div v-html="storyHtml" class="font-sans text-lg"></div>
         </div>
         <div class="pt-6 text-center">
-          <button @click="handleContinueStory" :disabled="isLoading" class="glow-button relative font-serif text-xl bg-stone-800 text-amber-200 border-2 border-amber-400/50 rounded-lg px-12 py-4 shadow-lg hover:bg-stone-700 hover:border-amber-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300">
+          <button @click="handleContinueStory" :disabled="isLoading" class="glow-button relative font-serif text-xl bg-background text-accent-primary border-2 border-accent-secondary/50 rounded-lg px-12 py-4 shadow-lg hover:bg-surface-secondary hover:border-accent-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300">
             <span class="relative z-10">{{ isLoadingStory ? 'Forging...' : 'Forge the Next Chapter' }}</span>
           </button>
         </div>
