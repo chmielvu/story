@@ -96,6 +96,38 @@ body {
     color: #86efac; /* green-300 */
 }
 
+/* Kael - Slate */
+.story-text p.speaker-kael {
+    border-left-color: #334155; /* slate-700 */
+}
+.story-text p.speaker-kael strong {
+    color: #94a3b8; /* slate-400 */
+}
+
+/* Torin - Blue */
+.story-text p.speaker-torin {
+    border-left-color: #1e40af; /* blue-800 */
+}
+.story-text p.speaker-torin strong {
+    color: #60a5fa; /* blue-400 */
+}
+
+/* Jared - Yellow */
+.story-text p.speaker-jared {
+    border-left-color: #854d0e; /* yellow-800 */
+}
+.story-text p.speaker-jared strong {
+    color: #facc15; /* yellow-400 */
+}
+
+/* Eryndor - Pink */
+.story-text p.speaker-eryndor {
+    border-left-color: #9d174d; /* pink-800 */
+}
+.story-text p.speaker-eryndor strong {
+    color: #f472b6; /* pink-400 */
+}
+
 
 .story-text p.abyss {
     border-left: 3px solid #b45309; /* Amber-700 */
