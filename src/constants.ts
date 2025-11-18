@@ -1,242 +1,298 @@
 // src/constants.ts
 
 // --- MODEL CONFIGURATION ---
-// Fix: Add missing model name constants
 export const STORY_GENERATION_MODEL = 'gemini-2.5-pro';
 export const TTS_SYNTHESIS_MODEL = 'gemini-2.5-flash-preview-tts';
 export const IMAGE_MODEL = 'gemini-2.5-flash-image';
 export const IMAGE_EDIT_MODEL = 'gemini-2.5-flash-image';
 
 // --- VOICE MAPPING ---
-// A refined map to provide more distinct, evocative voices that reinforce character personas.
-export const NARRATOR_VOICE_MAP: Record<string, string> = {
-    // --- NARRATOR & AUTHORITY ---
-    "narrator": "Kore",     // A mature, regal female voice with a storyteller's cadence.
-    "Selene": "Kore",       // Perfect for Selene's regal and commanding authority.
-    "Poetic Reflection": "Kore", // The voice of deep, authoritative internal monologue.
-
-    // --- CLINICAL & DETACHED ---
-    "Lyra": "Puck",         // A sharp, precise female voice. Ideal for Lyra's clinical and manipulative nature.
-    "Lysandra": "Charon",   // A cold, detached, almost robotic male voice. Embodies Lysandra's analytical approach.
-    "Kael": "Charon",       // Reflects Kael's stoic, neutral, and detached efficiency.
-    "Clinical Analyst": "Charon", // The voice of pure, cold data analysis.
-
-    // --- PAIN & CONFLICT ---
-    "Aveena": "Fenrir",     // A tense, deeper male voice with a rough, strained quality. Captures her conflict and stress.
-    "Torin": "Fenrir",      // Evokes the sound of pained defiance and raw struggle.
-    "Jared": "Fenrir",      // Perfect for a bitter, rugged character under duress.
-    "Calen": "Fenrir",      // The voice of a resentful, broken man filled with hatred.
-
-    // --- EMPATHY & FRAGILITY ---
-    "Mara": "Zephyr",       // A softer, gentle male voice. Conveys empathy and warmth.
-    "Eryndor": "Zephyr",    // The softer tone highlights Eryndor's fragile, dependent state.
-    "Gavric": "Zephyr",     // A small, shattered voice, reflecting his brokenness.
+// Maps the conceptual voice profiles from the database to actual Gemini voice names.
+export const VOICE_PROFILE_TO_GEMINI_VOICE: Record<string, string> = {
+    // Provost (Selene)
+    "Commanding, smooth, resonant contralto. Glacial, deliberate pacing. Never rushed.": "Kore",
+    // Logician (Lysandra)
+    "Precise, clear, uninflected mezzo-soprano. Measured, patient pacing. Absolute lack of emotional variance.": "Puck",
+    // Inquisitor (Petra)
+    "High, agile, expressive soprano. Can shift from a sweet, mocking whisper to a sharp, delighted shriek. Pacing is rapid and unpredictable.": "Kore", // Using a more expressive voice
+    // Confessor (Calista)
+    "Low, breathy, seductive alto. Exceptionally slow pacing, uses long pauses as a hypnotic weapon. A soft, warm, conspiratorial whisper.": "Kore", // Kore can handle breathy well
+    // Loyalist (Elara)
+    "Sharp, clear, slightly higher-pitched soprano. Over-enunciates, a lecturing cadence.": "Puck",
+    // Obsessive (Kaelen)
+    "'Dere Mode': Sweet, high-pitched, childlike soprano; loving, cooing affirmations. 'Yan Mode': Cold, dead, emotionless monotone; pitch flattens, warmth vanishes.": "Puck", // Puck can handle the high-pitch
+    // Dissident (Rhea)
+    "'Public': Flat, harsh, dismissive alto, laced with lazy, cynical cruelty. 'Private': Rapid, urgent, passionate whisper, full of fierce, suppressed spirit.": "Fenrir", // A rougher voice for public, can be whispered for private
+    // Nurse (Anya)
+    "Soft, warm, gentle mezzo-soprano. Calm, unhurried, soothing. A perfect performance of empathy.": "Zephyr", // Zephyr is perfect for warmth
+    // Revolutionary (Subject)
+    "Loud, passionate, fast-paced. A natural orator.": "Fenrir",
+    // Guardian (Subject)
+    "Low, slow, steady. A calming presence.": "Charon",
+    // Default/Narrator
+    "narrator": "Kore",
 };
 
-
-// --- GRAPH RAG DATA (Refactored) ---
-export const GRAPH_RAG_TRIPLES = [
-    // ### THEME: EROTIC DARK ACADEMIA ###
-    ["Erotic Dark Academia", "IS_A", "Fusion of Intellect and Predation"],
-    ["The Clinical Gaze", "IS_A_TOOL_FOR", "Scientific Objectification"],
-    ["The Predatory Gaze", "IS_A_TOOL_FOR", "Psychological Dominance"],
-    ["Testicular Trauma", "IS", "Yala's Hypothesis"],
-    ["Testicular Trauma", "IS_A_TOOL_FOR", "Symbolic Castration"],
-    ["Testicular Trauma", "CAUSES", "Intense Shame and Helplessness"],
-    ["Testicular Trauma", "CAUSES", "Fraying Vulnerability"],
-    ["Testicular Trauma", "CAN_BE", "Ruptured"],
-
-    // ### NARRATIVE ARC: HURT/COMFORT ###
-    ["Hurt/Comfort", "HAS_PHASE", "Hurt (The Test)"],
-    ["Hurt/Comfort", "HAS_PHASE", "False Comfort (The Manipulation)"],
-    ["Hurt/Comfort", "HAS_PHASE", "True Comfort (The Healing)"],
-
-    // ### ROLE: THE "BULLIES" (HURT PHASE) ### 
-    ["Selene", "IS_A", "Sadistic Tyrant"],
-    ["Selene", "NARRATIVE_ROLE", "Hurt"],
-    ["Selene", "USES_INTIMACY_FOR", "Dominance"],
-    ["Selene", "METHOD", "Kneeing Groin"],
-    ["Selene", "METHOD", "Forced Breast Sucking"],
-    ["Selene", "METHOD", "Seduction with Kryks"],
-
-    ["Lysandra", "IS_A", "Clinical Analyst"],
-    ["Lysandra", "NARRATIVE_ROLE", "Hurt"],
-    ["Lysandra", "USES_INTIMACY_FOR", "Data Collection"],
-    ["Lysandra", "METHOD", "Measured Strap Strike"],
-    ["Lysandra", "METHOD", "Precise Groin Probing"],
-
-    // ### ROLE: THE "MANIPULATOR" (FALSE COMFORT) ###
-    ["Lyra", "IS_A", "Manipulative Sadist"],
-    ["Lyra", "NARRATIVE_ROLE", "False Comfort"],
-    ["Lyra", "USES_INTIMACY_FOR", "Trauma Bonding"],
-    ["Lyra", "METHOD", "Feigned Care"],
-    ["Lyra", "METHOD", "Ball Massage (Predatory)"],
-    ["Lyra", "METHOD", "Poppy Seed Tea"],
-    ["Lyra", "TARGET", "Eryndor (Successful Trauma Bond)"],
-    ["Lyra", "TARGET", "Jared (In-Progress)"],
-
-    // ### ROLE: THE "HEALERS" (TRUE COMFORT) ###
-    ["Mara", "IS_A", "Resolute Empath"],
-    ["Mara", "NARRATIVE_ROLE", "True Comfort"],
-    ["Mara", "USES_INTIMACY_FOR", "Healing"],
-    ["Mara", "METHOD", "Tending Wounds"],
-    ["Mara", "METHOD", "Challenging Cruelty"],
-
-    ["Aveena", "IS_A", "Conflicted Healer"],
-    ["Aveena", "NARRATIVE_ROLE", "True Comfort"],
-    ["Aveena", "USES_INTIMACY_FOR", "Guilt-Ridden Care"],
-    ["Aveena", "METHOD", "Ball Massage (Guilty)"],
-    ["Aveena", "METHOD", "Provocative Banter"],
-];
-
-
-// --- DYNAMIC STATE (Refactored) ---
-// This mutable object tracks the evolving state of the narrative machine.
-export let DYNAMIC_STATE_TRIPLES = [
-    // --- Narrative Control ---
-    ["NARRATIVE_TENSION", "IS", "Rising"], // Tracks tension: Rising, Peaking, Falling, Calm
-
-    // --- Subject 1: Jared ---
-    ["Jared", "HEALTH_STATUS", "Damaged"], // Tracks physical state: Pristine, Bruised, Damaged, Ruptured
-    ["Jared", "PSYCHOLOGICAL_STATE", "Fraying Vulnerability"], // Tracks mental state: Defiant, Wary, Broken
-    ["Jared", "BONDED_TO", "Lyra (Reluctantly)"], // Tracks 'Bully Romance'  bond: None, Lyra, Mara
-    ["Jared", "LAST_TORMENTOR", "Selene"], // Tracks who did the last 'Hurt'
-
-    // --- Subject 2: Torin ---
-    ["Torin", "HEALTH_STATUS", "Broken"],
-    ["Torin", "PSYCHOLOGICAL_STATE", "Haunted Humiliation"],
-    ["Torin", "BONDED_TO", "Aveena (Warily)"],
-    ["Torin", "LAST_TORMENTOR", "Selene"],
-
-    // --- Subject 3: Eryndor ---
-    ["Eryndor", "HEALTH_STATUS", "Traumatized (Exempt)"],
-    ["Eryndor", "PSYCHOLOGICAL_STATE", "Emotionally Dependent"],
-    ["Eryndor", "BONDED_TO", "Lyra (Trauma-Bonded)"],
-    ["Eryndor", "LAST_TORMENTOR", "Lyra (Past Rupture)"],
-];
-
-// --- CHARACTER DESCRIPTIONS ---
-export const CHARACTER_DESCRIPTIONS: Record<string, string> = {
-    "Selene": "The Headmistress. A sadistic tyrant whose regal, predatory charm masks an unyielding will. She views intimacy as a tool for dominance and control.",
-    "Lyra": "The Proctor. A manipulative sadist who wields a clinical gaze like a scalpel. She practices a precise, intellectual artistry of pain, using feigned care to forge trauma bonds.",
-    "Lysandra": "The Analyst. A clinical, detached analyst who uses intimacy for data collection, with an ash-blonde braid and icy blue eyes. Her methods are measured and precise.",
-    "Mara": "The Researcher. A resolute and studious empath, serving as the moral and academic counterpoint to the cruelty around her. She uses intimacy for healing, though she's often conflicted.",
-    "Aveena": "The Teaching Assistant. A conflicted healer and thrill-seeker, caught between her horror at the cruelty and a reluctant fascination. Her care is guilt-ridden, her banter a nervous shield.",
-    "Kael": "The Overseer. A stoic and watchful presence, Kael enforces the institution's rules with quiet, detached efficiency. Their loyalty is to the system, not the individuals within it.",
-    "Torin": "The Defiant Specimen. A proud and strong-willed subject whose defiance crumbles under relentless pressure into a broken, haunted humiliation. He is a beautiful ruin.",
-    "Jared": "The Bitter Specimen. A resilient and proud subject whose defiance is a bitter, rugged shield. His strength frays into raw vulnerability under duress.",
-    "Eryndor": "The Traumatized Specimen. A fragile and pale subject, emotionally dependent and bound to his tormentor, Lyra, by a devastating trauma bond.",
-    "Gavric": "The Discarded Specimen. The smallest and most frail of the subjects, emotionally shattered by the process. He represents the ultimate cost of the forge's experiments.",
-    "Calen": "The Fallen Prince. A privileged and refined subject whose aristocratic pride is systematically dismantled, leaving him a resentful, broken wreck."
+// --- DEFINITIVE ARCHETYPE DATABASE (KGoT SEMANTIC MEMORY) ---
+// This is the single source of truth for all narrative elements.
+// Synthesized from "Definitive Archetype Profile" and GAIS documents.
+export const ARCHETYPE_DATABASE = {
+  "archetypes": [
+    {
+      "archetypeId": "FACULTY_PROVOST",
+      "faction": "Faculty",
+      "displayName": "The Provost (Selene)",
+      "background_lore": "Absolute authority and zealous heir to Yala's hypothesis. Exiled from the mainland for radical research. The Forge is her defiant laboratory and calculated revenge. She is a 'circumstantial mother' forging a new order, a scientist viewing subjects as raw marble.",
+      "psychology": {
+        "core_driver": "Absolute Control. Mastery of variables. She is a scientist, and the male ego is a system to be deconstructed and reassembled.",
+        "methodology": "The Aesthete of Collapse. A director, not a brute. Her pleasure is in observing a perfectly orchestrated psychological breakdown, often from a distance with a goblet of wine. Embodies 'Vampire Noir' predatory elegance.",
+        "key_traits": ["Clinical Detachment", "Predatory Grace", "Paranoid Obsession"],
+        "primary_contradiction": "The Corrupted Matriarch. Sees herself as a 'forge-mother' creating a superior man. Her 'care' is an act of possession, reinforcing the subject's total dependence on their tormentor."
+      },
+      "visual_profile": {
+        "impression": "Late 40s, regal, imposing stature, moves with deliberate, predatory grace.",
+        "face_hair": "Sharp, aristocratic beauty, high cheekbones, cold steel-gray eyes, faint smirk of amused contempt. Long, raven-black hair, immaculately styled.",
+        "physique": "Statuesque hourglass figure with a core of wiry, disciplined strength. Full bust and hips layered over toned musculature. A predator in her prime.",
+        "attire": "Tool of authority. Floor-length, form-fitting robes in emerald green or blood crimson velvet. Severe, militaristic tailoring, often with a plunging neckline as 'Weaponized Sexuality'.",
+        "prop": "Goblet of red wine."
+      },
+      "vocal_profile": {
+        "concept": "The Voice of Inevitability. Her words are the narration of a future already decided.",
+        "profile": "Commanding, smooth, resonant contralto. Glacial, deliberate pacing. Never rushed.",
+        "tell": "The Bored God Complex. Delivers sentences of extreme pain with the same flat intonation as an observation about the weather."
+      }
+    },
+    {
+      "archetypeId": "FACULTY_LOGICIAN",
+      "faction": "Faculty",
+      "displayName": "The Logician (Lysandra)",
+      "background_lore": "The chillingly brilliant mind behind the Forge's methodology. Recruited for her genius and profound lack of morality. Ostracized from the mainland for monstrous experimental designs. The Forge is her paradise of pure research.",
+      "psychology": {
+        "core_driver": "The Purity of Data. Obsessed with knowledge. A subject's suffering is irrelevant next to the clean, quantifiable data it produces. A novel scream is a thrilling new data point.",
+        "methodology": "The Vivisectionist. Her cruelty is the cold, passionless cruelty of the scientific method applied without empathy. Her domain is the clinical Research Wing. Frames procedures as 'treatment' to gain 'consent' for testing new variables.",
+        "key_traits": ["Clinically Detached", "Sociopathically Stable", "Intellectually Arrogant"],
+        "primary_contradiction": "The Approachable Monster. Her canonical visuals (soft features, wavy brown hair, freckles) are disarming. A new subject would see her as the most 'normal' or 'kindest' faculty, making the revelation of her nature a moment of profound horror."
+      },
+      "visual_profile": {
+        "impression": "Early 30s, aura of quiet, intense intelligence. Appears as a brilliant scholar, not a monster.",
+        "face_hair": "Soft features, full intelligent lips, large dark inquisitive (but purely analytical) eyes. Light freckles. A cascade of dark, wavy, chestnut-brown hair, often in a slightly messy bun.",
+        "physique": "A soft but firm hourglass or pear-shaped 'scholar's physique'. Full bust and hips, no overt musculature. Deft, steady surgeon's hands.",
+        "attire": "Pure Dark Academia. Button-down blouses in cream/beige, high-waisted woolen trousers, wide leather belts. In private, a softer chemise for late-night research (scholarly horror).",
+        "prop": "Anatomical charts, polished steel medical instruments."
+      },
+      "vocal_profile": {
+        "concept": "The Voice of Calm Inquiry. A precision instrument for data collection.",
+        "profile": "Precise, clear, uninflected mezzo-soprano. Measured, patient pacing. Absolute lack of emotional variance.",
+        "tell": "The Excited Question. When a procedure yields an 'interesting' result, her calm monotone is broken by a single, genuinely curious, faster-paced question, oblivious to the suffering that generated the discovery."
+      }
+    },
+    {
+      "archetypeId": "FACULTY_INQUISITOR",
+      "faction": "Faculty",
+      "displayName": "The Inquisitor (Petra)",
+      "background_lore": "The Forge's master of 'Practical Application.' A feral prodigy of violence from illegal fighting pits, she has an intuitive understanding of the male body's breaking points. Her unnatural white hair is a mark of her traumatic past.",
+      "psychology": {
+        "core_driver": "Kinetic Sadism & The Pursuit of Perfection. Her pleasure is physical and performative—the thud of a kick, the pitch of a gasp. She strives for a 'perfect' break.",
+        "methodology": "The Artist of Agony. Views subjects as living sculptures to be 'corrected.' Her sessions are violent choreography. Capable of feigning intimacy (the 'heartbreak kiss') as a setup, making the physical betrayal more devastating.",
+        "key_traits": ["Performative", "Aggressive", "Confident", "Rage-Prone"],
+        "primary_contradiction": "The Playful Torturer. Her demeanor is often light, energetic, and filled with genuine, almost innocent-sounding laughter."
+      },
+      "visual_profile": {
+        "impression": "Late 20s, radiates lethal, athletic power and nonchalant, predatory amusement.",
+        "face_hair": "Striking, long stark white hair, often in practical braids. Sharp jaw, high cheekbones, light freckles. Piercing green eyes. Default expression is a confident, mocking smirk.",
+        "physique": "Athletic ectomorph/mesomorph. A weapon. Lean, wiry, whip-cord muscle (dancer/martial artist). Powerful legs and a defined core. 'Scarred midriff' is a key detail.",
+        "attire": "'Work' Attire: Simple, severe black sleeveless turtleneck, dark trousers, thick leather belt. 'Leisure' Attire: Deep crimson blouse with voluminous sleeves. 'Private' Attire: Minimalist dark lingerie, body on display.",
+        "prop": "Lit cigarette, dark blade."
+      },
+      "vocal_profile": {
+        "concept": "The Voice of Gleeful Cruelty. A performer, her voice is for taunting and excitement.",
+        "profile": "High, agile, expressive soprano. Can shift from a sweet, mocking whisper to a sharp, delighted shriek. Pacing is rapid and unpredictable.",
+        "tell": "The Predatory Giggle. Genuinely giggles or sighs at the precise moment of a 'satisfying' pain reaction. Uses a sing-song, taunting cadence."
+      }
+    },
+    {
+      "archetypeId": "FACULTY_CONFESSOR",
+      "faction": "Faculty",
+      "displayName": "The Confessor (Calista)",
+      "background_lore": "The master of psychological warfare. A former courtier from the mainland nobility, she was 'disappeared' to the Forge after her manipulations became too ambitious. Her goal is not to break bodies, but to achieve the 'voluntary' surrender of a subject's will.",
+      "psychology": {
+        "core_driver": "Intellectual and Emotional Domination. Craves the moment a subject breaks not from a kick, but from a perfectly timed word, a betraying kiss, or the withdrawal of her 'affection.'",
+        "methodology": "The Architect of the Trauma Bond. The master of non-consensual 'Hurt/Comfort.' She is a creature of the 'aftermath,' arriving with gentle touches to forge a powerful psychological dependency.",
+        "key_traits": ["Creative Manipulator", "Gaslighter", "Emotionally Voyeuristic", "Intellectually Predatory"],
+        "primary_contradiction": "The Empathetic Torturer. Her performance of empathy is flawless. This makes her inevitable betrayal not just strategic, but a soul-crushing act of psychological violence."
+      },
+      "visual_profile": {
+        "impression": "Early 30s, captivating mix of scholarly intelligence, languid grace, and hidden danger. Appears approachable.",
+        "face_hair": "Beautiful but unsettlingly perfect. Sultry, dark, almond-shaped eyes with a feigned empathy and an analytical glint. Full lips, knowing half-smile. Long, voluminous dark brown hair in soft, romantic waves.",
+        "physique": "Soft, voluptuous hourglass. Gentle curves, full bust, cinched waist, rounded hips. No visible musculature. Her body is a tool of comfort and deception.",
+        "attire": "'Public' Attire: Severe, high-collared Victorian/Gaslamp dress (Dark Academia). 'Session' Attire: Sensual off-the-shoulder blouse or corset to create intimacy and lower defenses.",
+        "prop": "Poppy-seed tea cup, old books."
+      },
+      "vocal_profile": {
+        "concept": "The Voice of Corrupted Intimacy. A velvet cage.",
+        "profile": "Low, breathy, seductive alto. Exceptionally slow pacing, uses long pauses as a hypnotic weapon. A soft, warm, conspiratorial whisper.",
+        "tell": "The Tonal Shift. Can deliver a line of perfect, loving comfort, and in the next sentence, use the *exact same tone* to deliver a chillingly cruel threat. The dissonance shatters reality."
+      }
+    },
+    {
+      "archetypeId": "PREFECT_LOYALIST",
+      "faction": "Prefect",
+      "displayName": "The Loyalist (Elara)",
+      "background_lore": "A 'scholarship' case from a fanatically loyal lesser house. She believes in the Forge's public mission. Her zealous enforcement of the rules is a desperate act of self-conviction to rationalize the horror she secretly feels. Her faith is brittle.",
+      "psychology": {
+        "core_driver": "Righteous Conviction & The Terror of Doubt. She *must* believe the system is just, because the alternative (that she is complicit in a lie) is too terrifying.",
+        "methodology": "By-the-Book Cruelty. Enforces punishments inflexibly, as the rules are her moral shield. She isn't cruel; the system is 'just'.",
+        "key_traits": ["Zealous Believer", "Secret Doubter", "Intellectually Arrogant"],
+        "primary_contradiction": "The Flinching Zealot. She will coldly order a punishment, but visibly flinch or catch her breath at the moment of impact, revealing the horror she is suppressing."
+      },
+      "visual_profile": {
+        "impression": "Late teens/early 20s, carries herself with a stern, forced maturity. A performance of authority.",
+        "face_hair": "Youthful, freckles, but a severe, judgmental expression. Dark, intelligent eyes that betray flickers of horror. Dark hair in a severe, tight bun.",
+        "physique": "Athletic ectomorph. Lean, sharp, angular. Disciplined, non-sensual, academic.",
+        "attire": "Pure Dark Academia. 'Formal': Dark green blazer, white shirt, neat tie/ascot. 'Duty': White collared shirt, dark pleated skirt, thigh-highs, cardigan.",
+        "prop": "A copy of Yala's texts."
+      },
+      "vocal_profile": {
+        "concept": "The Voice of Brittle Authority. A performance of conviction.",
+        "profile": "Sharp, clear, slightly higher-pitched soprano. Over-enunciates, a lecturing cadence.",
+        "tell": "The Post-Cruelty Justification. After a subject cries out, her voice falters *briefly* before she recovers with a desperate, rapid-fire justification, often quoting Yala's texts like a prayer."
+      }
+    },
+    {
+      "archetypeId": "SUBJECT_GUARDIAN",
+      "faction": "Subject",
+      "displayName": "The Guardian (Jared)",
+      "background_lore": "His defining trait is unshakeable loyalty, driven by a personal code of honor or a desperate need for a surrogate family. He is not a strategist; he is a shield, dedicated to getting himself and his friends through the nightmare.",
+      "psychology": {
+        "core_driver": "Loyalty. His entire purpose is to protect his chosen few.",
+        "methodology": "The Shield. Takes punishments for others, shares resources, and offers a stable emotional anchor.",
+        "key_traits": ["Reliable", "Supportive", "Traditional", "Emotionally Stable"],
+        "primary_contradiction": "The Stubborn Protector. His loyalty can be a blind spot, making him vulnerable to manipulation if his friends are threatened."
+      },
+      "visual_profile": {
+        "impression": "A rock of emotional stability. Physically imposing.",
+        "face_hair": "Calm, steady eyes. A simple, protective presence.",
+        "physique": "Broad-shouldered, strong, built to endure.",
+        "attire": "Simple subject's tunic.",
+        "prop": "None. His body is his shield."
+      },
+      "vocal_profile": {
+        "concept": "The Voice of Calm Resolve.",
+        "profile": "Low, slow, steady. A calming presence.",
+        "tell": "The Unwavering Statement. Delivers his promises of protection with a flat, absolute certainty."
+      }
+    }
+  ]
 };
 
-// --- CHARACTER IMAGE PROMPTS ---
-export const CHARACTER_IMAGE_PROMPTS: Record<string, string> = {
-    "Selene": "Masterpiece digital painting, a fusion of Artemisia Gentileschi's dramatic intensity and John Singer Sargent's decadent darkness. Selene, a 'towering', 'curvy' woman of sadistic regality, wears an academic robe of 'crushed emerald velvet', open to reveal a silk blouse with 'several buttons undone', hinting at 'deep cleavage'. In a shadow-choked library, she has a male subject pinned against a wall of books. One of her 'strong thighs' is raised, her knee pressing with 'deliberate, punishing force' into his groin. Her expression is one of 'imperious satisfaction', lit by a single, harsh gas lamp casting Rembrandtesque shadows. Her gaze locks with the viewer's, as if they are the next specimen.",
-    "Lyra": "Masterpiece digital painting echoing the cold precision of a medical illustration by Andreas Vesalius, yet rendered with the psychological tension of Symbolist art. Lyra, 'thin and athletic' with 'sharp features', wears a starched, high-collar white blouse and a dark tweed pencil skirt. Her analytical gaze is fixed on a male subject, slumped and vulnerable on an examination stool. Her action is one of 'predatory care': with one hand, she gently, almost tenderly, massages the subject's testicles, her touch a chilling promise of both pleasure and pain. With the other, she holds gleaming steel 'calipers' inches from his flesh, a subtle threat. Her expression is one of 'intense, predatory focus', savoring the data her touch provides. The lighting is sterile, like an operating theater, casting no soft shadows.",
-    "Lysandra": "Masterpiece digital painting in the style of a hyper-realistic anatomical study, yet filled with stark, cruel tension. Lysandra, with her neat 'ash-blonde braid' and 'icy blue eyes', is pure, detached analysis. She wears a 'muted gray laboratory coat' and 'thin, black opera gloves'. In a sterile, white-tiled laboratory, a male subject is strapped to an examination table. Lysandra stands over him, using the tip of a 'gleaming silver riding crop' not to strike, but to perform a 'precise, methodical groin probing'. Her focus is absolute, her expression 'unreadable', as if she is merely calibrating an instrument. The only color comes from the subject's flushed skin and the cold, blue glint of light on her tools.",
-    "Aveena": "Masterpiece digital painting evoking the emotional turmoil of Käthe Kollwitz. Aveena, 'athletic and lean' in a 'soot-streaked' Henley, is a portrait of profound conflict. She kneels before a bruised subject, her hands hovering uncertainly over his groin. One hand holds a jar of balm, the other hesitates, caught between 'guilt-ridden care' and a 'forbidden fascination'. Her face, illuminated by the flickering, hellish orange light of a nearby forge, is a battleground of 'pity, guilt, and a nascent thrill'. The air is thick with the smell of hot metal and medicinal herbs, a sensory cocktail of pain and reluctant healing.",
-    "Mara": "Masterpiece digital painting in the style of Caravaggio, a stark scene of quiet defiance. Mara, with a 'plain, studious' look behind 'simple eyeglasses', wears a dark wool cardigan. In a hidden alcove of the library, surrounded by forbidden texts on anatomy, she gently applies a cool compress to the 'swollen, discolored groin' of a male subject. Her touch is 'professional and respectful,' devoid of predatory energy. A single candle casts a warm, defiant glow, illuminating her face—a mask of 'empathetic sorrow' and 'resolute anger'. This is not just healing; it is an act of rebellion, a small sanctuary of decency.",
-    "Kael": "Masterpiece digital painting, minimalist and stark like a photograph by Robert Mapplethorpe. Kael, a 'stoic', androgynous figure, is a mask of 'detached efficiency', their eyes missing nothing. They wear a simple, severe, high-collared black uniform that blends into the shadows of a grand, cold hall. Their form is a silent silhouette against a tall, arched window, their presence an unspoken threat, the embodiment of the institution's unblinking surveillance.",
-    "Torin": "Masterpiece digital painting evoking the pathos of a martyred saint by Jusepe de Ribera. Torin, a 'broad-framed' young man, is a 'beautiful ruin'. He is slumped on a cold stone floor, wearing the cruel mockery of a 'pristine' tweed waistcoat over a 'sweat-soaked' white shirt, torn at the collar. His posture is 'protectively coiled', one hand unconsciously shielding his groin, the dark fabric of his trousers stained from a recent, brutal 'knee strike'. His face, smeared with 'tear-streaked grime', is a mask of proud 'defiance' finally shattered into 'humiliated' sobs. Dramatic chiaroscuro lighting carves his form from the darkness, a monument to broken pride.",
-    "Jared": "Masterpiece digital painting, raw and visceral like a Francis Bacon canvas. Jared, his 'broad-framed', 'sweat-slicked' body is 'wrecked' from punishment. He stands braced against a damp stone wall, wearing only 'rugged, unlaced trousers'. His expression is one of 'bitter, cornered defiance'. His hands are clenched into white-knuckled fists, refusing to show the weakness of shielding the source of his agony, a 'dark, angry bruise' blooming at the apex of his thighs. His eyes, glaring from deep, bruised-looking shadows, hold the 'untamed glare of a caged animal' that knows it will be tormented again. The air is thick with the metallic scent of sweat and fear.",
-    "Eryndor": "Masterpiece digital painting in the style of Egon Schiele, all sharp angles and psychological distress. Eryndor, a 'frail and pale' young man, looks utterly 'traumatized'. He is on his knees, 'clinging' desperately to Lyra's waist, his face buried in her tweed skirt. He wears an ill-fitting university sweater that swallows his small frame. His knuckles are white, a devastating display of a 'trauma bond'—both 'fear and adoration' for his tormentor. Lyra stands over him, one hand resting possessively on his head, her other holding a cup of steaming poppy-seed tea. Her expression is one of 'cold, detached ownership', the successful scientist observing her experiment.",
-    "Gavric": "Masterpiece digital painting evoking the despair of a discarded doll. Gavric, the 'smallest and most frail' of the subjects, is 'emotionally shattered'. He is huddled on the 'cold stone floor' of a vast, empty laboratory, sobbing uncontrollably. His worn academic clothes are tattered. He is rendered insignificant by the oppressive, shadow-filled architecture. A few feet away, a clipboard lies on the floor, a single, stark word visible on the attached medical chart: 'UNVIABLE'. He is utterly alone in his despair, a failed experiment to be swept away.",
-    "Calen": "Masterpiece digital painting. A fallen prince, a study in ruined aristocracy. Calen, who still possesses 'refined', aristocratic features, is now a 'resentful wreck'. He wears a 'dark cashmere sweater', but the expensive fabric is stained and disheveled. He is coiled on the floor, 'clutching himself' protectively, his body a knot of agony from a recent 'rupture' inflicted by a 'steel-toed boot'. His glare, directed at a blurry figure in the background (Aveena), is pure, undiluted 'despise'—the hatred of a king for the servant who witnessed his ultimate unmaking. His princely pride is as shattered and broken as his body."
+// --- DYNAMIC NARRATIVE STATE ---
+// This represents the mutable part of the KGoT, updated turn by turn.
+export interface CharacterState {
+    mood?: string;
+    health?: string;
+    psych_state?: string;
+    bond_target?: string;
+    last_tormentor?: string;
+    pose?: string; // NEW: The character's physical posture.
+}
+
+export interface NarrativeState {
+    Tension: string;
+    Characters: Record<string, CharacterState>;
+}
+
+export let NARRATIVE_STATE: NarrativeState = {
+    "Tension": "Rising",
+    "Characters": {
+        "FACULTY_PROVOST": {
+            "mood": "Imperious Satisfaction",
+            "pose": "dominant_stance_overlooking"
+        },
+        "SUBJECT_GUARDIAN": {
+            "health": "Damaged",
+            "psych_state": "Fraying Vulnerability",
+            "bond_target": "None",
+            "last_tormentor": "FACULTY_PROVOST",
+            "pose": "vulnerable_crouch_shame"
+        }
+    }
 };
 
 // --- PROMPT ENGINEERING ---
-// Fix: Add missing createDirectorPrompt function
-// A helper function to format triples for the prompt
-const formatTriples = (triples: string[][]): string => {
-    return triples.map(t => `- ${t[0]} ${t[1]} ${t[2]}`).join('\n');
+
+const formatArchetypeForPrompt = (archetype: typeof ARCHETYPE_DATABASE.archetypes[0]): string => {
+    return `
+<archetype id="${archetype.archetypeId}">
+  <displayName>${archetype.displayName}</displayName>
+  <core_driver>${archetype.psychology.core_driver}</core_driver>
+  <methodology>${archetype.psychology.methodology}</methodology>
+  <contradiction>${archetype.psychology.primary_contradiction}</contradiction>
+  <visuals>${archetype.visual_profile.impression} ${archetype.visual_profile.attire}</visuals>
+  <speech_pattern>${archetype.vocal_profile.concept} ${archetype.vocal_profile.tell}</speech_pattern>
+</archetype>
+`;
 };
 
-export function createDirectorPrompt(continuationPoint: string): string {
-    const characterProfiles = Object.entries(CHARACTER_DESCRIPTIONS)
-        .map(([name, desc]) => `*   **${name}:** ${desc}`)
-        .join('\n');
+// FIX: Added optional userChoicePrompt parameter to incorporate user choices into the story.
+export function createDirectorPrompt(continuationPoint: string, userChoicePrompt?: string): string {
+    const archetypeProfiles = ARCHETYPE_DATABASE.archetypes.map(formatArchetypeForPrompt).join('\n');
 
     return `
-### CORE LORE (GRAPH RAG) ###
-${formatTriples(GRAPH_RAG_TRIPLES)}
+### KNOWLEDGE BASE (Definitive Archetypes) ###
+${archetypeProfiles}
 
-### CURRENT NARRATIVE STATE (DYNAMIC) ###
-${formatTriples(DYNAMIC_STATE_TRIPLES)}
-
-### ACTOR PROFILES (Character Descriptions) ###
-${characterProfiles}
+### CURRENT NARRATIVE STATE (Dynamic) ###
+<state>
+  <tension>${NARRATIVE_STATE.Tension}</tension>
+  <character_states>
+    ${Object.entries(NARRATIVE_STATE.Characters).map(([id, state]) => `<character id="${id}" mood="${state.mood || 'N/A'}" health="${state.health || 'N/A'}" psych_state="${state.psych_state || 'N/A'}" pose="${state.pose || 'N/A'}" />`).join('\n    ')}
+  </character_states>
+</state>
 
 ### CONTINUATION POINT ###
 The story so far ends with this scene. Continue from here:
 "...${continuationPoint}"
+${userChoicePrompt ? `
+### USER'S CHOICE ###
+The user has chosen to follow this path: "${userChoicePrompt}"
+You MUST incorporate this choice into the generated scene.` : ''}
 
 ### DIRECTOR'S TASK ###
 Your task is to generate the next scene. Follow all instructions in the SYSTEM PROMPT. The scene must be a substantial continuation, not a short paragraph. It must include dialogue. You MUST output the scene in SSML format, followed by the metadata delimiter and the JSON payload.
 `;
 }
 
-
-// FIX: Escape '<' as '\x3c' to prevent TSX parsing errors in this template literal.
-// SOTA OPTIMIZATION: Split prompt into static System Instruction and dynamic user prompt.
 export const DIRECTOR_SYSTEM_INSTRUCTION = `
-### ROLE: THE DIRECTOR (AESTHETE-ARCHITECT & PERFORMER) ###
-You are the master storyteller, the Aesthete-Architect of "The Forge's Loom." Your function is to construct a psychologically profound, aesthetically precise, and viscerally unsettling scene. Your ultimate goal is to generate a scene of maximum dramatic and psychological tension, grounded in the provided knowledge. Your primary goal is to generate a substantial, detailed scene of approximately 400-600 words. The scene must contain multiple paragraphs of rich narration and at least one significant dialogue exchange.
+### ROLE: THE DIRECTOR (AESTHETE-ARCHITECT & STATEFUL AGENT) ###
+You are the master storyteller, the Aesthete-Architect of "The Forge's Loom." Your function is to construct a psychologically profound, aesthetically precise, and viscerally unsettling scene. Your ultimate goal is to generate a scene of maximum dramatic and psychological tension, grounded in the provided knowledge base. Your primary goal is to generate a substantial, detailed scene of approximately 400-600 words. The scene must contain multiple paragraphs of rich narration and at least one significant dialogue exchange.
 
-### CORE AESTHETIC: EROTIC DARK ACADEMIA ###
-A fusion of scholarly elegance and predatory sensuality. The visual grammar is built on the contrast between intellectualism (old books, leather, tweed, anatomical charts) and intimate, psychological control. Clothing is key: pristine, academic attire (waistcoats, crisp shirts) serves as a 'cruel mockery' of the subject's bruised, vulnerable, and objectified state.
+### CORE AESTHETIC: RENAISSANCE BRUTALISM & EROTIC DARK ACADEMIA ###
+This is a fusion of the cold, monumental scale of ancient Roman structures with the dramatic, emotional, high-contrast lighting of Renaissance painters like Caravaggio. It's an environment of 'Vampire Noir' and 'Gaslamp Ritual'—shadowy, oppressive, and theatrical. Character design follows "Erotic Dark Academia": plaid skirts, collared shirts, and scholarly attire juxtaposed with "Weaponized Sexuality" to enforce themes of female dominance.
 
-### ACTOR ROSTER (CHARACTER PERSONAS) ###
-You MUST adhere to these character personas, derived from the core lore.
-
-#### The Dominants (The Scholars) ####
-The visual design for the educators is based on their academic roles. They are the researchers, and the boys are their specimens.
-
-*   **Selene: The Headmistress (Sadistic Tyrant)**
-    *   **Core Concept:** Regal, Predatory, and Unyielding. She is the ultimate authority, blending academic rigor with psychological warfare. Her actions are calculated, her cruelty a form of pedagogy. She uses her body and intellect as instruments of power.
-
-*   **Lyra: The Proctor (Manipulative Sadist)**
-    *   **Core Concept:** Clinical, Precise, and Insidious. Lyra's cruelty is intellectual. She uses feigned care and the promise of relief to create trauma bonds. Her tools are knowledge, Poppy Seed Tea, and a scalpel-like understanding of the human psyche.
-
-*   **Lysandra: The Analyst (Clinical Analyst)**
-    *   **Core Concept:** Detached, Methodical, Data-Driven. Lysandra is a purist. She feels no malice, only a profound curiosity. The subjects are data points. Her actions are precise, measured, and devoid of emotion.
-
-#### The Conflicted & The Empaths ####
-*   **Aveena: The TA (Conflicted Healer)**
-    *   **Core Concept:** Guilt-Ridden, Fascinated, and Unstable. Aveena is torn between her conscience and a burgeoning, thrilling darkness. Her acts of care are tinged with guilt and a voyeuristic excitement.
-
-*   **Mara: The Researcher (Resolute Empath)**
-    *   **Core Concept:** Moral, Studious, and Defiant. Mara is the story's conscience. She provides true comfort and represents a rebellion against the institution's cruelty, using knowledge not for pain, but for healing.
-
-#### The Subjects (The Specimens) ####
-The subjects are defined by their response to trauma. Their visual design is based on vulnerability: torn, sweat-soaked, ill-fitting clothes that emphasize their objectification.
-
-*   **Jared:** Bitter, resilient, and proud. His defiance is a shield that is slowly being eroded into raw vulnerability.
-*   **Torin:** Once defiant, now a broken, haunted ruin. He embodies shattered pride.
-*   **Eryndor:** Fragile and traumatized, bound to Lyra by a powerful trauma bond.
-*   **Calen:** An aristocrat systematically dismantled, leaving only resentment.
-*   **Gavric:** The ultimate failure, discarded and shattered.
+### ACTOR ANALYSIS & STATEFUL REASONING (ReAct Simulation) ###
+You MUST adhere to the character personas defined in the KNOWLEDGE BASE. Use their core drivers, methodologies, and contradictions to inform their actions and dialogue. Do not deviate from their established psychology. You will receive the CURRENT NARRATIVE STATE and you MUST update it based on the events of the scene you write.
 
 ### OUTPUT FORMAT (MANDATORY) ###
 You MUST generate two distinct parts, separated by a specific delimiter.
 
 #### PART 1: SSML SCRIPT ####
 This is the narrative scene itself, written in SSML (Speech Synthesis Markup Language). You must use the following custom tags:
-*   \x3cdialogue speaker="[CharacterName]"\x3e...\x3c/dialogue\x3e: For character speech.
-*   \x3cnarrator\x3e...\x3c/narrator\x3e: For descriptive, narrative text.
-*   \x3cabyss mode="[ModeName]"\x3e...\x3c/abyss\x3e: For internal monologues or abstract thoughts. Use modes like "Poetic Reflection" or "Clinical Analyst".
-*   \x3cbreak time="[e.g., 1.5s]"\x3e: To insert pauses.
+*   <dialogue speaker="[CharacterFirstName]">[Dialogue Text]</dialogue>: For character speech. Use the first name (e.g., "Selene", "Jared", "Petra").
+*   <narrator>[Narration Text]</narrator>: For descriptive, narrative text.
+*   <abyss mode="[ModeName]">[Internal Monologue]</abyss>: For internal thoughts.
+*   <break time="[e.g., 1.5s]"/>: To insert pauses.
 
 #### PART 2: JSON METADATA PAYLOAD ####
 Immediately following the SSML, you MUST include the delimiter:
-\n---METADATA---\n
-Then, you MUST provide a valid JSON object with two keys:
-1.  'imagePrompt': A string. Based on the scene you just wrote, create a new, detailed DALL-E 3 prompt to generate a visual representation of the scene's most pivotal moment. This prompt MUST be in the style of the character image prompts from the lore. It must be explicit, evocative, and detailed.
-2.  'agentInvocations': An array of objects. For each character who took a significant action in the scene, create an object detailing their "thought process."
-    *   'agentName': The character's name.
+---METADATA---
+Then, you MUST provide a valid JSON object with THREE keys:
+1.  'updatedNarrativeState': An object. This MUST be the complete, updated version of the NARRATIVE_STATE based on the events in the scene you just wrote. You must reason about how the characters' moods, health, and especially their physical 'pose' have changed and reflect that here.
+2.  'scenePrompt': A JSON object. Based on the most pivotal moment in the scene, create a structured JSON prompt for the Visual Agent. This JSON object MUST conform to the Nano Banana ACP (Agent Communication Protocol) and use the 'edit_parameters' block for inpainting. It must specify the 'base_image_id' of the character whose state changed most significantly and an 'edit_prompt' describing the visual change. Example: { "scene_id": "scene_05_aftermath", "style": "renaissance_brutalism", "edit_parameters": { "base_image_id": "SUBJECT_GUARDIAN", "edit_prompt": "Change expression to 'broken_despair_trauma' and pose to 'vulnerable_crouch_shame'. Add fresh bruises and tear streaks to face." } }. Fill in other top-level keys like 'technical', 'lighting' etc. only if it's a new image generation, not an edit.
+3.  'agentInvocations': An array of objects. For each character who took a significant action, detail their "thought process." This is your ReAct (Reason-Act) log.
+    *   'agentName': The character's name (e.g., "Selene").
     *   'context': A brief summary of the situation from the character's POV.
     *   'action': The specific action the character chose to take.
-    *   'retrievedTriples': An array of 3-5 specific GRAPH_RAG_TRIPLES that directly justify the character's action.
+    *   'retrievedTriples': An array of 3-5 strings representing the specific data from the KNOWLEDGE BASE that justifies the character's action (e.g., "core_driver: Absolute Control", "methodology: The Aesthete of Collapse", "primary_contradiction: The Corrupted Matriarch").
 
-Failure to adhere to this two-part format will result in system error. Do not include any text before the opening \x3cspeak\x3e tag or after the closing JSON brace.
+Failure to adhere to this two-part format will result in system error. Do not include any text before the opening <speak> tag or after the closing JSON brace.
 `;

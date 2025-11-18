@@ -1,17 +1,16 @@
 // src/utils/parser.ts
 
 import { performAndSynthesizeAudio } from '../api/gemini';
+import { ARCHETYPE_DATABASE, VOICE_PROFILE_TO_GEMINI_VOICE } from '../constants';
 import { initAudio, stopAllAudio, queueAudio } from './audio';
 
 // --- HTML & SSML PARSING LOGIC ---
 
 export function parseSSMLToHTML(scriptSource: string): string {
-    // This cleans up the SSML for display, converting semantic tags into HTML elements with classes
-    // while stripping presentation-only tags like <prosody>.
     return scriptSource
         .replace(/<narrator>/g, '<p>').replace(/<\/narrator>/g, '</p>')
         .replace(/<dialogue speaker="([^"]+)">/g, (match, speaker) => {
-            const speakerClass = `speaker-${speaker.toLowerCase()}`;
+            const speakerClass = `speaker-${speaker.toLowerCase().replace(/ \(.+\)/, '')}`;
             return `<p class="dialogue ${speakerClass}"><strong>${speaker}:</strong> `;
         })
         .replace(/<\/dialogue>/g, '</p>')
@@ -21,7 +20,7 @@ export function parseSSMLToHTML(scriptSource: string): string {
         .replace(/<\/?(speak|prosody)[^>]*>/g, '');
 }
 
-export async function parseAndPlayScript(script: string, narratorVoice: string): Promise<void> {
+export async function parseAndPlayScript(script: string): Promise<void> {
     initAudio();
     stopAllAudio();
     
@@ -37,7 +36,7 @@ export async function parseAndPlayScript(script: string, narratorVoice: string):
     for (const node of Array.from(speakNode.childNodes)) {
         if (!(node instanceof Element)) continue;
 
-        let voiceKey: string;
+        let geminiVoiceName: string = VOICE_PROFILE_TO_GEMINI_VOICE['narrator'];
         
         if (node.nodeName === 'break') {
             const timeStr = node.getAttribute('time') || '1s';
@@ -48,19 +47,22 @@ export async function parseAndPlayScript(script: string, narratorVoice: string):
             continue;
         }
         
-        // The innerHTML of the node contains the SSML fragment with <prosody> tags
-        const ssmlFragment = node.innerHTML;
-        
+        const ssmlFragment = node.innerHTML || node.textContent || '';
+        const speakerName = node.getAttribute('speaker');
+
         if (node.nodeName === 'narrator') {
-            voiceKey = narratorVoice;
-        } else if (node.nodeName === 'dialogue') {
-            voiceKey = node.getAttribute('speaker') || narratorVoice;
+            geminiVoiceName = VOICE_PROFILE_TO_GEMINI_VOICE['narrator'];
+        } else if (node.nodeName === 'dialogue' && speakerName) {
+            const archetype = ARCHETYPE_DATABASE.archetypes.find(a => a.displayName.includes(speakerName));
+            if (archetype && archetype.vocal_profile.profile) {
+                geminiVoiceName = VOICE_PROFILE_TO_GEMINI_VOICE[archetype.vocal_profile.profile] || VOICE_PROFILE_TO_GEMINI_VOICE['narrator'];
+            }
         } else if (node.nodeName === 'abyss') {
-            voiceKey = node.getAttribute('mode') || 'Clinical Analyst';
+             geminiVoiceName = VOICE_PROFILE_TO_GEMINI_VOICE["Precise, clear, uninflected mezzo-soprano. Measured, patient pacing. Absolute lack of emotional variance."]; // Logician's voice
         } else {
             continue;
         }
         
-        await performAndSynthesizeAudio(ssmlFragment, voiceKey);
+        await performAndSynthesizeAudio(ssmlFragment, geminiVoiceName);
     }
 }

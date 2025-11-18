@@ -3,6 +3,7 @@
 // --- AUDIO STATE MANAGEMENT ---
 interface AudioState {
     outputAudioContext: AudioContext | null;
+    ambientNode: { oscillator: OscillatorNode, gain: GainNode } | null;
 }
 
 type AudioQueueItem = AudioBuffer | { type: 'pause'; duration: number };
@@ -13,6 +14,7 @@ let pauseTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 export const audioState: AudioState = {
     outputAudioContext: null,
+    ambientNode: null,
 };
 
 export const activeSources = new Set<AudioBufferSourceNode>();
@@ -93,6 +95,10 @@ export async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampl
 export function initAudio(): void {
     if (!audioState.outputAudioContext || audioState.outputAudioContext.state === 'closed') {
         audioState.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+         // Attempt to resume the context if it's suspended, good practice after user interaction
+        if (audioState.outputAudioContext.state === 'suspended') {
+            audioState.outputAudioContext.resume();
+        }
     }
 }
 
@@ -108,11 +114,44 @@ export function stopAllAudio(): void {
     });
     activeSources.clear();
 
+    if (audioState.ambientNode) {
+        try {
+            audioState.ambientNode.oscillator.stop();
+        } catch(e) { /* already stopped */ }
+        audioState.ambientNode = null;
+    }
+
+
     audioQueue.length = 0;
     isProcessingQueue = false;
 }
 
-// --- SCENE TRANSITION SOUND ---
+// --- AMBIENT & TRANSITION SOUNDS ---
+
+export function playAmbientInfrasound(): void {
+    if (!audioState.outputAudioContext || audioState.ambientNode) {
+        return;
+    }
+    if (audioState.outputAudioContext.state !== 'running') {
+        console.warn("Audio context not running, cannot play ambient sound.");
+        return;
+    }
+
+    const now = audioState.outputAudioContext.currentTime;
+    const oscillator = audioState.outputAudioContext.createOscillator();
+    const gain = audioState.outputAudioContext.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(40, now); // Low frequency hum
+    gain.gain.setValueAtTime(0.015, now); // Very low, barely perceptible volume
+
+    oscillator.connect(gain);
+    gain.connect(audioState.outputAudioContext.destination);
+    oscillator.start(now);
+    
+    audioState.ambientNode = { oscillator, gain };
+}
+
 
 export function playTransitionSound(): void {
     if (!audioState.outputAudioContext) {
