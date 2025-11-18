@@ -1,4 +1,12 @@
-import { createApp } from 'vue';
-import { App } from './src/App.tsx';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { App } from './src/App';
+import './globals.css';
 
-createApp(App).mount('#app');
+const root = createRoot(document.getElementById('root')!);
+
+root.render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);

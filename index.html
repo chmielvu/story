@@ -7,17 +7,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="globals.css">
     <style>
         body { font-family: 'Libre Baskerville', serif; }
     </style>
 
-    <!-- Import Map: Define aliases for our modules -->
+    <!-- Import Map for React 19 -->
     <script type="importmap">
 {
   "imports": {
-    "vue": "https://esm.sh/vue@3/dist/vue.esm-browser.js",
-    "@google/genai": "https://esm.sh/@google/genai@^0.9.0"
+    "react": "https://esm.sh/react@19",
+    "react-dom/client": "https://esm.sh/react-dom@19/client",
+    "@google/genai": "https://esm.sh/@google/genai@^0.9.0",
+    "clsx": "https://esm.sh/clsx@2.1.1",
+    "tailwind-merge": "https://esm.sh/tailwind-merge@2.3.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
   }
 }
 </script>
@@ -27,29 +32,56 @@
         theme: {
           extend: {
             colors: {
-              'background': 'var(--color-background)',
-              'surface-primary': 'var(--color-surface-primary)',
-              'surface-secondary': 'var(--color-surface-secondary)',
-              'text-primary': 'var(--color-text-primary)',
-              'text-secondary': 'var(--color-text-secondary)',
-              'text-muted': 'var(--color-text-muted)',
-              'border-primary': 'var(--color-border-primary)',
-              'border-secondary': 'var(--color-border-secondary)',
-              'accent-primary': 'var(--color-accent-primary)',
-              'accent-secondary': 'var(--color-accent-secondary)',
+              'background': 'hsl(var(--background))',
+              'foreground': 'hsl(var(--foreground))',
+              'card': 'hsl(var(--card))',
+              'card-foreground': 'hsl(var(--card-foreground))',
+              'popover': 'hsl(var(--popover))',
+              'popover-foreground': 'hsl(var(--popover-foreground))',
+              'primary': 'hsl(var(--primary))',
+              'primary-foreground': 'hsl(var(--primary-foreground))',
+              'secondary': 'hsl(var(--secondary))',
+              'secondary-foreground': 'hsl(var(--secondary-foreground))',
+              'muted': 'hsl(var(--muted))',
+              'muted-foreground': 'hsl(var(--muted-foreground))',
+              'accent': 'hsl(var(--accent))',
+              'accent-foreground': 'hsl(var(--accent-foreground))',
+              'destructive': 'hsl(var(--destructive))',
+              'destructive-foreground': 'hsl(var(--destructive-foreground))',
+              'border': 'hsl(var(--border))',
+              'input': 'hsl(var(--input))',
+              'ring': 'hsl(var(--ring))',
+            },
+            borderRadius: {
+              lg: `var(--radius)`,
+              md: `calc(var(--radius) - 2px)`,
+              sm: "calc(var(--radius) - 4px)",
             },
             fontFamily: {
               sans: "'Libre Baskerville', serif",
               serif: "'IM Fell English', serif",
-            }
+            },
+            keyframes: {
+              "accordion-down": {
+                from: { height: "0" },
+                to: { height: "var(--radix-accordion-content-height)" },
+              },
+              "accordion-up": {
+                from: { height: "var(--radix-accordion-content-height)" },
+                to: { height: "0" },
+              },
+            },
+            animation: {
+              "accordion-down": "accordion-down 0.2s ease-out",
+              "accordion-up": "accordion-up 0.2s ease-out",
+            },
           }
         }
       }
     </script>
 </head>
-<body>
-    <div id="app">
-    </div>
+<body class="dark">
+    <div id="root"></div>
     <script type="module" src="index.tsx"></script>
 </body>
 </html>

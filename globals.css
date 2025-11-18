@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-background: #1a1510;
+    --color-surface-primary: rgba(41, 32, 25, 0.85);
+    --color-surface-secondary: #292019;
+    --color-text-primary: #d1c7b7;
+    --color-text-secondary: #e0d9cc;
+    --color-text-muted: rgba(197, 157, 95, 0.9);
+    --color-border-primary: #4a3c2f;
+    --color-border-secondary: #5c4b3a;
+    --color-accent-primary: #c59d5f;
+    --color-accent-secondary: #e6bf8a;
+    --color-accent-glow-rgb: 197, 157, 95;
+    --shadow-color: rgba(10, 5, 0, 0.6);
+
+    /* ShadCN Variables */
+    --background: 28 17% 8%; /* #1a1510 */
+    --foreground: 36 17% 77%; /* #d1c7b7 */
+    --muted: 33 22% 47%; /* #c59d5f with opacity adjustment */
+    --muted-foreground: 36 17% 77%;
+    --popover: 28 17% 8%;
+    --popover-foreground: 36 17% 77%;
+    --card: 28 18% 13%; /* #292019 */
+    --card-foreground: 36 17% 77%;
+    --border: 28 18% 24%; /* #4a3c2f */
+    --input: 28 18% 24%;
+    --primary: 38 46% 64%; /* #c59d5f */
+    --primary-foreground: 28 17% 8%;
+    --secondary: 28 18% 24%;
+    --secondary-foreground: 36 17% 77%;
+    --accent: 38 46% 64%;
+    --accent-foreground: 28 17% 8%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 36 17% 77%;
+    --ring: 38 46% 64%;
+    --radius: 0.5rem;
+  }
+ 
+  .dark {
+    /* Identical to :root for a dark-only theme */
+    --background: 28 17% 8%; /* #1a1510 */
+    --foreground: 36 17% 77%; /* #d1c7b7 */
+    --muted: 33 22% 47%;
+    --muted-foreground: 36 17% 77%;
+    --popover: 28 17% 8%;
+    --popover-foreground: 36 17% 77%;
+    --card: 28 18% 13%; /* #292019 */
+    --card-foreground: 36 17% 77%;
+    --border: 28 18% 24%; /* #4a3c2f */
+    --input: 28 18% 24%;
+    --primary: 38 46% 64%; /* #c59d5f */
+    --primary-foreground: 28 17% 8%;
+    --secondary: 28 18% 24%;
+    --secondary-foreground: 36 17% 77%;
+    --accent: 38 46% 64%;
+    --accent-foreground: 28 17% 8%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 36 17% 77%;
+    --ring: 38 46% 64%;
+  }
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.story-text {
+  transition: opacity 0.8s ease-in-out, filter 0.8s ease-in-out;
+}
+.story-text.story-transitioning {
+  opacity: 0.2;
+  filter: blur(4px);
+  pointer-events: none; 
+}
+.story-text p {
+  margin-bottom: 1.5rem;
+  line-height: 1.75;
+}
+.story-text p:last-child {
+  margin-bottom: 0;
+}
+.story-text p.dialogue {
+    color: var(--color-text-secondary);
+    border-left: 3px solid var(--color-border-secondary);
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+}
+.story-text p.dialogue strong {
+    color: var(--color-accent-primary);
+    font-weight: bold;
+}
+/* Speaker colors remain the same */
+.story-text p.speaker-selene { border-left-color: #7f1d1d; }
+.story-text p.speaker-selene strong { color: #f87171; }
+.story-text p.speaker-lyra { border-left-color: #581c87; }
+.story-text p.speaker-lyra strong { color: #c084fc; }
+.story-text p.speaker-mara { border-left-color: #155e75; }
+.story-text p.speaker-mara strong { color: #67e8f9; }
+.story-text p.speaker-aveena { border-left-color: #14532d; }
+.story-text p.speaker-aveena strong { color: #86efac; }
+.story-text p.speaker-kael { border-left-color: #334155; }
+.story-text p.speaker-kael strong { color: #94a3b8; }
+.story-text p.speaker-torin { border-left-color: #1e40af; }
+.story-text p.speaker-torin strong { color: #60a5fa; }
+.story-text p.speaker-jared { border-left-color: #854d0e; }
+.story-text p.speaker-jared strong { color: #facc15; }
+.story-text p.speaker-eryndor { border-left-color: #9d174d; }
+.story-text p.speaker-eryndor strong { color: #f472b6; }
+.story-text p.abyss {
+    border-left: 3px solid #b45309;
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+    color: #a8a29e;
+    background-color: rgba(10, 10, 10, 0.2);
+    font-size: 0.95em;
+}
+
+.glow-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, 
+    rgba(var(--color-accent-glow-rgb), 0.4) 0%, 
+    rgba(var(--color-accent-glow-rgb), 0.2) 40%,
+    rgba(var(--color-accent-glow-rgb), 0) 70%
+  );
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease, opacity 0.6s ease;
+  z-index: 0;
+  border-radius: 50%;
+}
+
+.glow-button:hover::before {
+  width: 400px;
+  height: 400px;
+}
+
+.glow-button:disabled::before {
+    opacity: 0;
+}
