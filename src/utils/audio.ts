@@ -1,3 +1,4 @@
+
 // src/utils/audio.ts
 
 // --- AUDIO STATE MANAGEMENT ---
@@ -95,10 +96,10 @@ export async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampl
 export function initAudio(): void {
     if (!audioState.outputAudioContext || audioState.outputAudioContext.state === 'closed') {
         audioState.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-         // Attempt to resume the context if it's suspended, good practice after user interaction
-        if (audioState.outputAudioContext.state === 'suspended') {
-            audioState.outputAudioContext.resume();
-        }
+    }
+    // Always attempt resume if suspended
+    if (audioState.outputAudioContext?.state === 'suspended') {
+        audioState.outputAudioContext.resume().catch(() => {});
     }
 }
 
@@ -129,64 +130,82 @@ export function stopAllAudio(): void {
 // --- AMBIENT & TRANSITION SOUNDS ---
 
 export function playAmbientInfrasound(): void {
-    if (!audioState.outputAudioContext || audioState.ambientNode) {
-        return;
-    }
-    if (audioState.outputAudioContext.state !== 'running') {
-        console.warn("Audio context not running, cannot play ambient sound.");
-        return;
-    }
-
-    const now = audioState.outputAudioContext.currentTime;
-    const oscillator = audioState.outputAudioContext.createOscillator();
-    const gain = audioState.outputAudioContext.createGain();
-
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(40, now); // Low frequency hum
-    gain.gain.setValueAtTime(0.015, now); // Very low, barely perceptible volume
-
-    oscillator.connect(gain);
-    gain.connect(audioState.outputAudioContext.destination);
-    oscillator.start(now);
+    initAudio();
     
-    audioState.ambientNode = { oscillator, gain };
+    if (!audioState.outputAudioContext) return;
+
+    const startSound = () => {
+        if (!audioState.outputAudioContext) return;
+        
+        // Check again if running, if not, we can't play yet
+        if (audioState.outputAudioContext.state !== 'running') return;
+        
+        if (audioState.ambientNode) return; // Already playing
+
+        const now = audioState.outputAudioContext.currentTime;
+        const oscillator = audioState.outputAudioContext.createOscillator();
+        const gain = audioState.outputAudioContext.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(40, now); // Low frequency hum
+        gain.gain.setValueAtTime(0.015, now); // Very low, barely perceptible volume
+
+        oscillator.connect(gain);
+        gain.connect(audioState.outputAudioContext.destination);
+        oscillator.start(now);
+        
+        audioState.ambientNode = { oscillator, gain };
+    };
+
+    if (audioState.outputAudioContext.state === 'suspended') {
+        const resumeWrapper = () => {
+            audioState.outputAudioContext?.resume().then(() => {
+                startSound();
+            });
+            document.removeEventListener('click', resumeWrapper);
+            document.removeEventListener('keydown', resumeWrapper);
+        };
+        document.addEventListener('click', resumeWrapper);
+        document.addEventListener('keydown', resumeWrapper);
+    } else if (audioState.outputAudioContext.state === 'running') {
+        startSound();
+    }
 }
 
 
 export function playTransitionSound(): void {
-    if (!audioState.outputAudioContext) {
-        console.warn("Audio context not initialized.");
-        return;
-    }
-    // Attempt to resume the context if it's suspended (e.g., due to browser policy)
+    initAudio();
+
+    if (!audioState.outputAudioContext) return;
+    
+    const play = () => {
+        if (!audioState.outputAudioContext || audioState.outputAudioContext.state !== 'running') return;
+        
+        const now = audioState.outputAudioContext.currentTime;
+        
+        // Create a low-frequency oscillator for the fundamental tone
+        const oscillator = audioState.outputAudioContext.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(120, now); // A low, subtle hum
+        oscillator.frequency.exponentialRampToValueAtTime(80, now + 0.8); // Pitch drops slightly
+        
+        // Create a gain node to control the volume envelope
+        const gainNode = audioState.outputAudioContext.createGain();
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.25, now + 0.1); // Quick but gentle attack
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 1.2); // Slower, resonant decay
+        
+        // Connect and play
+        oscillator.connect(gainNode);
+        gainNode.connect(audioState.outputAudioContext.destination);
+        
+        oscillator.start(now);
+        oscillator.stop(now + 1.5); // Stop after 1.5 seconds
+    };
+
     if (audioState.outputAudioContext.state === 'suspended') {
-        audioState.outputAudioContext.resume();
+        audioState.outputAudioContext.resume().then(play).catch(() => {});
+    } else {
+        play();
     }
-    
-    // Proceed only if the context is running
-    if (audioState.outputAudioContext.state !== 'running') {
-        console.warn("Audio context is not running. Cannot play transition sound.");
-        return;
-    }
-    
-    const now = audioState.outputAudioContext.currentTime;
-    
-    // Create a low-frequency oscillator for the fundamental tone
-    const oscillator = audioState.outputAudioContext.createOscillator();
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(120, now); // A low, subtle hum
-    oscillator.frequency.exponentialRampToValueAtTime(80, now + 0.8); // Pitch drops slightly
-    
-    // Create a gain node to control the volume envelope
-    const gainNode = audioState.outputAudioContext.createGain();
-    gainNode.gain.setValueAtTime(0, now);
-    gainNode.gain.linearRampToValueAtTime(0.25, now + 0.1); // Quick but gentle attack
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 1.2); // Slower, resonant decay
-    
-    // Connect and play
-    oscillator.connect(gainNode);
-    gainNode.connect(audioState.outputAudioContext.destination);
-    
-    oscillator.start(now);
-    oscillator.stop(now + 1.5); // Stop after 1.5 seconds
 }

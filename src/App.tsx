@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CharacterImage } from './components/CharacterImage';
@@ -9,25 +8,12 @@ import { parseSSMLToHTML, parseAndPlayScript } from './utils/parser';
 import { 
     continueStoryStream, 
     generateImageFromPrompt, 
-    editImage,
-    batchGenerateInitialPortraits,
     type AIPayloadMetadata,
     type NanoBananaPrompt,
     type UserChoice,
 } from './api/gemini';
-import { ARCHETYPE_DATABASE, INITIAL_NARRATIVE_STATE, type NarrativeState, type CharacterState } from './constants';
+import { INITIAL_NARRATIVE_STATE, type NarrativeState } from './constants';
 import { stopAllAudio, initAudio, playTransitionSound, playAmbientInfrasound } from './utils/audio';
-
-interface CharacterPortrait {
-    id: string;
-    displayName: string;
-    description: string;
-    imageUrl: string;
-    isLoading: boolean;
-    isEditing: boolean;
-    errorMessage: string;
-    pose: string;
-}
 
 const Loader = () => (
   <svg
@@ -48,7 +34,10 @@ const Loader = () => (
 
 
 export function App() {
-  const [narrativeState, setNarrativeState] = useState<NarrativeState>(INITIAL_NARRATIVE_STATE);
+  const [narrativeState, setNarrativeState] = useState<NarrativeState>(() => {
+    const saved = localStorage.getItem('forge_kgot');
+    return saved ? JSON.parse(saved) : INITIAL_NARRATIVE_STATE;
+  });
   const [storyHtml, setStoryHtml] = useState(`<p class="text-text-primary">The final, shuddering gasp had been wrenched from him minutes ago, but Selene was in no hurry. Jared stood braced against the mahogany desk, his knuckles white, his body a wrecked, sweat-slicked canvas of her artistry. The air in her study, thick with the scent of old leather and ozone from the storm raging outside, tasted of his humiliation.</p><p class="dialogue speaker-selene"><strong>Selene:</strong> "Breathe,"</p><p> she commanded, her voice a low contralto that vibrated through the floorboards. </p><p class="dialogue speaker-selene"><strong>Selene:</strong> "I'm not finished with my analysis."</p>`);
   const [isLoading, setIsLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -58,53 +47,15 @@ export function App() {
   const [userChoices, setUserChoices] = useState<UserChoice[]>([]);
   const storyContainer = useRef<HTMLDivElement | null>(null);
 
-  const [characterPortraits, setCharacterPortraits] = useState<Record<string, CharacterPortrait>>(() => {
-    const initialCharacterIds = Object.keys(INITIAL_NARRATIVE_STATE.Characters);
-    return Object.fromEntries(
-      ARCHETYPE_DATABASE.archetypes
-        .filter(arch => initialCharacterIds.includes(arch.archetypeId))
-        .map(arch => {
-          const state = INITIAL_NARRATIVE_STATE.Characters[arch.archetypeId];
-          // BUG FIX: Keying by `displayName.split(" ")[0]` caused collisions (e.g., "The Guardian" and "The Provost" both became "The").
-          // The new key is the name in parentheses (e.g., "Selene") for uniqueness.
-          const uniqueKey = arch.displayName.match(/\(([^)]+)\)/)?.[1] || arch.displayName;
-          return [
-            uniqueKey, 
-            {
-              id: arch.archetypeId,
-              displayName: arch.displayName,
-              description: arch.psychology.core_driver,
-              imageUrl: '',
-              isLoading: true,
-              isEditing: false,
-              errorMessage: '',
-              pose: state?.pose || 'Neutral',
-            }
-          ]
-        })
-    );
-  });
+  useEffect(() => {
+    localStorage.setItem('forge_kgot', JSON.stringify(narrativeState));
+  }, [narrativeState]);
 
   const getStoryTextOnly = useCallback(() => {
     const div = document.createElement('div');
     div.innerHTML = storyHtml;
     return div.textContent || div.innerText || '';
   }, [storyHtml]);
-
-  const urlToBase64 = async (url: string): Promise<{ base64: string, mimeType: string }> => {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const mimeType = blob.type;
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string).split(',')[1];
-        resolve({ base64, mimeType });
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
 
   const continueStory = useCallback(async (userChoicePrompt?: string) => {
     if (isLoading) return;
@@ -134,21 +85,6 @@ export function App() {
         
         if (metadata.updatedNarrativeState) {
           setNarrativeState(metadata.updatedNarrativeState);
-          setCharacterPortraits(prev => {
-              const newPortraits = { ...prev };
-              let hasChanges = false;
-              for(const [charId, charState] of Object.entries(metadata.updatedNarrativeState.Characters)) {
-                  const portraitKey = Object.keys(newPortraits).find(key => newPortraits[key].id === charId);
-                  if(portraitKey && charState.pose && newPortraits[portraitKey].pose !== charState.pose) {
-                      newPortraits[portraitKey] = {
-                          ...newPortraits[portraitKey],
-                          pose: charState.pose
-                      };
-                      hasChanges = true;
-                  }
-              }
-              return hasChanges ? newPortraits : prev;
-          });
         }
 
         if (metadata.scenePrompt) {
@@ -164,24 +100,6 @@ export function App() {
           }
         }
         
-        if (metadata.characterEdits && metadata.characterEdits.length > 0) {
-          for (const edit of metadata.characterEdits) {
-            const portraitKey = Object.keys(characterPortraits).find(key => characterPortraits[key].id === edit.base_image_id);
-            if (portraitKey && characterPortraits[portraitKey].imageUrl) {
-              setCharacterPortraits(prev => ({ ...prev, [portraitKey]: { ...prev[portraitKey], isEditing: true }}));
-              try {
-                const { base64, mimeType } = await urlToBase64(characterPortraits[portraitKey].imageUrl);
-                const editedImage = await editImage(base64, mimeType, edit.edit_prompt);
-                setCharacterPortraits(prev => ({ ...prev, [portraitKey]: { ...prev[portraitKey], imageUrl: editedImage.imageUrl }}));
-              } catch (e) {
-                setCharacterPortraits(prev => ({ ...prev, [portraitKey]: { ...prev[portraitKey], errorMessage: `Failed to edit portrait.` }}));
-              } finally {
-                setCharacterPortraits(prev => ({ ...prev, [portraitKey]: { ...prev[portraitKey], isEditing: false }}));
-              }
-            }
-          }
-        }
-
         if (metadata.userChoices) {
           setUserChoices(metadata.userChoices);
         }
@@ -196,7 +114,7 @@ export function App() {
         setIsTransitioning(false);
       }
     });
-  }, [isLoading, narrativeState, getStoryTextOnly, isTransitioning, characterPortraits]);
+  }, [isLoading, narrativeState, getStoryTextOnly, isTransitioning]);
 
   useEffect(() => {
     if (storyContainer.current) {
@@ -213,21 +131,6 @@ export function App() {
     playAmbientInfrasound();
 
     const fetchInitialData = async () => {
-        const activeChars = Object.keys(INITIAL_NARRATIVE_STATE.Characters);
-        const portraitResults = await batchGenerateInitialPortraits(activeChars);
-        setCharacterPortraits(prev => {
-            const newPortraits = { ...prev };
-            for (const name in portraitResults) {
-                if (newPortraits[name]) {
-                    const result = portraitResults[name];
-                    newPortraits[name].imageUrl = result.imageUrl;
-                    newPortraits[name].errorMessage = result.errorMessage || '';
-                    newPortraits[name].isLoading = false;
-                }
-            }
-            return newPortraits;
-        });
-
         const initialScenePrompt: NanoBananaPrompt = {
             scene_id: "scene_01_initial_v2",
             style: "renaissance_brutalism",
@@ -276,34 +179,35 @@ export function App() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background text-foreground font-serif flex flex-col items-center p-4 sm:p-6 md:p-8">
-        <div className="w-full max-w-screen-2xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="w-full max-w-screen-xl mx-auto grid grid-cols-1 gap-8">
           
-          <main className="lg:col-span-9">
-            <Card className="bg-card/80 backdrop-blur-sm shadow-2xl overflow-hidden flex flex-col" style={{ 'boxShadow': '0 25px 50px -12px var(--shadow-color)' }}>
+          <main className="w-full">
+            <Card className="bg-card/80 backdrop-blur-sm shadow-2xl overflow-hidden flex flex-col min-h-[85vh]" style={{ 'boxShadow': '0 25px 50px -12px var(--shadow-color)' }}>
               <CardHeader className="border-b">
-                <CardTitle className="font-serif text-3xl sm:text-4xl text-primary tracking-wider">The Forge's Loom</CardTitle>
+                <CardTitle className="font-serif text-3xl sm:text-4xl text-primary tracking-wider text-center">The Forge's Loom</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <CharacterImage 
                   imageUrl={mainSceneImageUrl} 
                   isLoading={isMainSceneLoading} 
                   errorMessage={mainSceneErrorMessage}
+                  className="w-full aspect-video sm:aspect-[21/9] object-top"
                 />
               </CardContent>
-              <CardContent ref={storyContainer} className="flex-grow p-6 sm:p-8 overflow-y-auto relative" style={{maxHeight: '40vh'}}>
-                  <div className={`story-text text-secondary-foreground text-lg ${isTransitioning ? 'story-transitioning' : ''}`} dangerouslySetInnerHTML={{ __html: storyHtml }}/>
+              <CardContent ref={storyContainer} className="flex-grow p-8 sm:p-12 overflow-y-auto relative max-h-[50vh]">
+                  <div className={`story-text text-secondary-foreground text-xl leading-relaxed ${isTransitioning ? 'story-transitioning' : ''}`} dangerouslySetInnerHTML={{ __html: storyHtml }}/>
               </CardContent>
-              <CardFooter className="p-6 border-t bg-secondary/50 flex flex-col items-center justify-center space-y-4 min-h-[120px]">
+              <CardFooter className="p-8 border-t bg-secondary/50 flex flex-col items-center justify-center space-y-6 min-h-[140px]">
                 {userChoices.length > 0 && !isLoading ? (
-                  <div className="w-full flex flex-col sm:flex-row justify-center gap-4">
+                  <div className="w-full flex flex-col sm:flex-row justify-center gap-6">
                      {userChoices.map((choice, index) => (
-                       <Button key={index} onClick={() => handleChoice(choice)} variant="outline" size="lg" className="glow-button flex-grow z-10 text-accent-foreground">
+                       <Button key={index} onClick={() => handleChoice(choice)} variant="outline" size="lg" className="glow-button flex-grow z-10 text-accent-foreground py-6 text-lg">
                          {choice.text}
                        </Button>
                      ))}
                   </div>
                 ) : (
-                  <Button onClick={() => continueStory()} disabled={isLoading} size="lg" className="glow-button z-10 w-full sm:w-1/2">
+                  <Button onClick={() => continueStory()} disabled={isLoading} size="lg" className="glow-button z-10 w-full sm:w-2/3 py-6 text-lg">
                     {isLoading ? (
                       <>
                         <Loader />
@@ -317,30 +221,6 @@ export function App() {
               </CardFooter>
             </Card>
           </main>
-
-          <aside className="lg:col-span-3 space-y-6">
-            {/* FIX: Explicitly typing `portrait` resolves a type inference issue with Object.values in this context. */}
-            {Object.values(characterPortraits).map((portrait: CharacterPortrait) => (
-              <Card key={portrait.id} className="bg-card/80 backdrop-blur-sm shadow-lg transition-all duration-500">
-                 <CardHeader>
-                    <CardTitle className="font-serif text-xl text-secondary-foreground">{portrait.displayName}</CardTitle>
-                 </CardHeader>
-                 <CardContent className="p-0">
-                   <CharacterImage 
-                      imageUrl={portrait.imageUrl} 
-                      isLoading={portrait.isLoading} 
-                      isEditing={portrait.isEditing} 
-                      errorMessage={portrait.errorMessage} 
-                      className="aspect-square rounded-md"
-                    />
-                 </CardContent>
-                 <CardFooter className="p-4 mt-3 bg-secondary/50 rounded-b-lg text-xs flex flex-col items-start">
-                    <p className="text-muted-foreground italic">"{portrait.description}"</p>
-                    <p className="text-foreground mt-1 border-t border-border pt-1 w-full"><strong className="text-primary">Pose:</strong> {portrait.pose}</p>
-                 </CardFooter>
-              </Card>
-            ))}
-          </aside>
 
         </div>
       </div>

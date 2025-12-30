@@ -1,26 +1,29 @@
-import * as React from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Button } from './ui/button';
 
-// FIX: Switched to React.PropsWithChildren for a more standard and robust way of typing component props that accept children.
-type Props = React.PropsWithChildren<{}>;
+interface Props {
+  children: ReactNode;
+}
 
 interface State {
   hasError: boolean;
   errorMessage: string;
 }
 
-export class ErrorBoundary extends React.Component<Props, State> {
-  // The constructor-based state initialization was causing TypeScript errors. Switched to a class property initializer, which is a more modern and reliable pattern for React class components and resolves issues with strict property initialization.
-  state: State = {
-    hasError: false,
-    errorMessage: ''
-  };
+export class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      errorMessage: '',
+    };
+  }
 
   public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, errorMessage: error.message || 'An unexpected error occurred.' };
   }
 
-  public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
   }
 

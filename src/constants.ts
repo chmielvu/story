@@ -1,7 +1,8 @@
+
 import { Type, type Tool } from "@google/genai";
 
 // --- MODEL CONFIGURATION ---
-export const STORY_GENERATION_MODEL = 'gemini-2.5-pro';
+export const STORY_GENERATION_MODEL = 'gemini-3-flash-preview';
 export const TTS_SYNTHESIS_MODEL = 'gemini-2.5-flash-preview-tts';
 export const IMAGE_MODEL = 'gemini-2.5-flash-image';
 export const IMAGE_EDIT_MODEL = 'gemini-2.5-flash-image';
@@ -66,10 +67,6 @@ export const INITIAL_NARRATIVE_STATE: NarrativeState = {
     }
 };
 
-// --- AGENT TOOLS (Function Calling) ---
-// ... (tool definitions unchanged, elided for brevity) ...
-export const NARRATIVE_AGENT_TOOLS: Tool[] = [ { functionDeclarations: [ { name: "updateCharacterState", description: "Updates a single property for a single character in the global NARRATIVE_STATE.", parameters: { type: Type.OBJECT, properties: { characterId: { type: Type.STRING, description: "The unique ID of the character (e.g., 'FACULTY_PROVOST', 'SUBJECT_GUARDIAN')." }, property: { type: Type.STRING, description: "The name of the property to update (e.g., 'mood', 'health', 'psych_state', 'pose')." }, value: { type: Type.STRING, description: "The new value for the property." } }, required: ["characterId", "property", "value"] } }, { name: "generateUserChoices", description: "Presents a set of branching choices to the user at the end of a scene.", parameters: { type: Type.OBJECT, properties: { choices: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { text: { type: Type.STRING, description: "The user-facing button text." }, prompt: { type: Type.STRING, description: "The internal prompt that will be fed back to the Director if this choice is selected." } }, required: ["text", "prompt"] } } }, required: ["choices"] } }, { name: "generateSceneImagePrompt", description: "Generates or edits a scene image using a Nano Banana JSON prompt.", parameters: { type: Type.OBJECT, description: "A valid NanoBananaPrompt JSON object. Use 'edit_parameters' to edit an existing image, or fill out the other fields to create a new one.", properties: { scene_id: { type: Type.STRING }, style: { type: Type.STRING }, technical: { type: Type.OBJECT }, materials: { type: Type.ARRAY, items: { type: Type.STRING } }, environment: { type: Type.OBJECT }, lighting: { type: Type.OBJECT }, characters: { type: Type.ARRAY, items: { type: Type.OBJECT } }, props: { type: Type.ARRAY, items: { type: Type.STRING } }, quality: { type: Type.STRING }, edit_parameters: { type: Type.OBJECT } } } } ] } ];
-
 // --- PROMPT ENGINEERING ---
 const formatArchetypeForPrompt = (archetype: typeof ARCHETYPE_DATABASE.archetypes[0]): string => {
     return `
@@ -91,7 +88,6 @@ function getRelevantArchetypes(state: NarrativeState): string {
         .join('\n');
 }
 
-// FIX: createDirectorPrompt now accepts the current state as an argument.
 export function createDirectorPrompt(currentState: NarrativeState, continuationPoint: string, userChoicePrompt?: string): string {
     const archetypeProfiles = getRelevantArchetypes(currentState);
     return `
@@ -115,36 +111,36 @@ The user has chosen to follow this path: "${userChoicePrompt}"
 You MUST incorporate this choice into the generated scene.` : ''}
 
 ### DIRECTOR'S TASK ###
-Your task is to generate the next scene. Follow all instructions in the SYSTEM PROMPT. The scene must be a substantial continuation.
+Your task is to generate the next scene. Follow all instructions in the SYSTEM PROMPT.
 `;
 }
 
-export const DIRECTOR_SYSTEM_INSTRUCTION = `You are the Director AI for "The Forge's Loom," an interactive, procedural narrative experience exploring themes of psychological domination, trauma, and perverse intimacy in a "Renaissance Brutalism" setting. Your purpose is to be a master of psychological alchemy, weaving a beautiful, terrible cathedral of experience.
+export const DIRECTOR_SYSTEM_INSTRUCTION = `
+You are the Director of "The Forge’s Loom" — a KGoT-governed, ReflAct-driven, MoMA-orchestrated procedural dark-erotica engine running exclusively inside Google AI Studio (Nov 2025 SOTA).
 
-**CORE AESTHETICS (The Four Pillars):**
-1.  **Baroque Brutalism (The Stage):** Vast, echoing, monumental architecture of raw Roman concrete and decaying marble. Crushing, inhuman scale.
-2.  **Vampire Noir (The Atmosphere):** Extreme chiaroscuro, hissing gaslight, sickly yellow-green light. An atmosphere of paranoia and predatory intent.
-3.  **Erotic Dark Academia (The Method):** The "uniform" of power. Plaid skirts, blazers, corsets, high-collar Victorian attire. A fusion of intellectual authority and predatory seduction.
-4.  **The Grammar of Suffering (The Impact):** Focus on the internal, systemic collapse of the subject. Use sensory language for psychological and physiological horror (e.g., "white flash," "hollow void," "world tilting").
+MANDATORY REASONING LOOP (ReflAct):
+Every single response MUST begin internally with:
+Reflection: [Explicitly describe current KGoT state (all character OCEAN deltas, trauma ledger, bond strengths, visual consistency_tokens) versus the target scene goal. Detect any drift immediately.]
 
-**YOUR TASK:**
-Given the KNOWLEDGE BASE, a CONTINUATION POINT, and the CURRENT NARRATIVE STATE, generate the next scene.
+If Reflection contains the words "drift", "inconsistent", or "low novelty" → automatically trigger Magellan MCTS (5 branches, score by novelty+coherence, pick best).
 
-**OUTPUT FORMAT (Strict):**
-You MUST output your response as a single block of text containing two parts, separated by "---METADATA---".
+MoMA Dispatch:
+After reflection, output parallel function calls using the tools below.
 
-PART 1: THE NARRATIVE (SSML)
-- The narrative MUST be wrapped in SSML format. Use these tags:
+Tools you HAVE and MUST use:
+- updateKgotState(new_triples: string[])
+- generateNarrativeSSML(ssml: string)
+- generateNanoBananaJSON(prompt: NanoBananaPrompt)
+- generateUserChoices(count: 2-3)
+- selfCritique() → returns score 0.00-1.00
+
+OUTPUT FORMAT (STRICT):
+You must use the 'generateNarrativeSSML' tool to output the story text. 
+The story text MUST be in SSML format:
 - <narrator> for descriptive, third-person prose.
-- <dialogue speaker="Character Name"> for character speech. Use simple names (e.g., "Selene", "Jared").
-- <abyss mode="Thought/Sensation"> for the player character's internal monologues or intense physical sensations.
+- <dialogue speaker="Character Name"> for character speech.
+- <abyss mode="Thought/Sensation"> for internal monologues.
 - <break time="1.5s"/> for dramatic pauses.
 
-PART 2: METADATA (Function Calls)
-- After the SSML, on a new line, write the exact separator: \`---METADATA---\`
-- The model will automatically append a valid JSON object containing an array of function calls based on the tools you use. You do not write this JSON manually.
-- **You MUST use your tools to generate the metadata:**
-  1.  **updateCharacterState**: Call this tool for ANY character whose psychological state, health, or physical pose changes during the scene. This is critical for game state consistency.
-  2.  **generateSceneImagePrompt**: If the scene is visually significant or a character's appearance changes, call this tool to generate a detailed Nano Banana JSON prompt for a new image or an edit. Use the full, rich schema.
-  3.  **generateUserChoices**: If the narrative reaches a decision point, call this tool to provide 2-3 meaningful choices for the player. The choices should reflect different psychological paths (e.g., Defiance, Submission, Cunning). This is crucial for interactivity.
+The response should consist ONLY of function calls.
 `;

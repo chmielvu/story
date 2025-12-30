@@ -1,10 +1,12 @@
+
 // src/api/gemini.ts
 import { 
     GoogleGenAI, 
     Modality, 
+    Type,
+    FunctionCallingConfigMode,
     type Chat,
     type Tool,
-    type Part,
     type GenerateContentResponse,
 } from '@google/genai';
 import { 
@@ -14,7 +16,6 @@ import {
     TTS_SYNTHESIS_MODEL, 
     IMAGE_MODEL, 
     IMAGE_EDIT_MODEL,
-    NARRATIVE_AGENT_TOOLS,
     type NarrativeState,
     ARCHETYPE_DATABASE,
 } from '../constants';
@@ -25,6 +26,7 @@ import {
     initAudio,
     queueAudio
 } from '../utils/audio';
+import { VISUAL_MANDATE } from '../config/visualMandate';
 
 // --- TYPES (for internal API use) ---
 // This is the full v3.1 schema for Nano Banana, enabling detailed visual control.
@@ -94,6 +96,117 @@ export interface StreamCallbacks {
     onError: (error: Error) => void;
 }
 
+// --- HELPERS ---
+const NAME_TO_ID: Record<string, string> = {
+    "Selene": "FACULTY_PROVOST",
+    "Provost": "FACULTY_PROVOST",
+    "Lysandra": "FACULTY_LOGICIAN",
+    "Logician": "FACULTY_LOGICIAN",
+    "Petra": "FACULTY_INQUISITOR",
+    "Inquisitor": "FACULTY_INQUISITOR",
+    "Calista": "FACULTY_CONFESSOR",
+    "Confessor": "FACULTY_CONFESSOR",
+    "Elara": "PREFECT_LOYALIST",
+    "Loyalist": "PREFECT_LOYALIST",
+    "Jared": "SUBJECT_GUARDIAN",
+    "Guardian": "SUBJECT_GUARDIAN",
+};
+
+// --- TOOLS DEFINITION ---
+const TOOLS: Tool[] = [
+  {
+    functionDeclarations: [
+      {
+        name: "updateKgotState",
+        description: "Persist new triples into the Knowledge Graph of Thoughts. Triples typically look like '<Character, property, value>'.",
+        parameters: { 
+            type: Type.OBJECT, 
+            properties: { 
+                new_triples: { 
+                    type: Type.ARRAY, 
+                    items: { type: Type.STRING } 
+                } 
+            }, 
+            required: ["new_triples"] 
+        }
+      },
+      {
+        name: "generateNarrativeSSML",
+        description: "Generate the scene narration text in SSML format.",
+        parameters: { 
+            type: Type.OBJECT, 
+            properties: { 
+                ssml: { 
+                    type: Type.STRING, 
+                    description: "The narrative content using tags like <narrator>, <dialogue>, <abyss>." 
+                } 
+            }, 
+            required: ["ssml"] 
+        }
+      },
+      {
+        name: "generateNanoBananaJSON",
+        description: "Generate or edit scene using full v6 Nano Banana schema with consistency_token",
+        parameters: { 
+            type: Type.OBJECT, 
+            properties: { 
+                prompt: { 
+                    type: Type.OBJECT,
+                    properties: {
+                        scene_id: { type: Type.STRING },
+                        style: { type: Type.STRING },
+                        technical: { type: Type.OBJECT },
+                        materials: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        environment: { type: Type.OBJECT },
+                        lighting: { type: Type.OBJECT },
+                        characters: { type: Type.ARRAY, items: { type: Type.OBJECT } },
+                        props: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        quality: { type: Type.STRING },
+                        edit_parameters: { type: Type.OBJECT }
+                    },
+                    required: ["scene_id", "style"]
+                } 
+            }, 
+            required: ["prompt"] 
+        }
+      },
+      {
+        name: "generateUserChoices",
+        description: "Always generate 2-3 psychologically meaningful choices for the user to influence the story path.",
+        parameters: { 
+            type: Type.OBJECT, 
+            properties: { 
+                choices: { 
+                    type: Type.ARRAY, 
+                    items: { 
+                        type: Type.OBJECT, 
+                        properties: { 
+                            text: { type: Type.STRING }, 
+                            prompt: { type: Type.STRING } 
+                        }, 
+                        required: ["text", "prompt"] 
+                    } 
+                } 
+            }, 
+            required: ["choices"] 
+        }
+      },
+      {
+        name: "selfCritique",
+        description: "Report the coherence and novelty analysis.",
+        parameters: { 
+            type: Type.OBJECT, 
+            properties: {
+                score: { type: Type.NUMBER, description: "Coherence/novelty score 0.00-1.00" },
+                reasoning: { type: Type.STRING, description: "Brief justification for the score" }
+            }, 
+            required: ["score"] 
+        }
+      }
+    ]
+  }
+];
+
 // --- CORE API CALLS ---
 export async function performAndSynthesizeAudio(ssmlFragment: string, voiceKey: string): Promise<void> {
     if (!ssmlFragment.trim()) return;
@@ -125,37 +238,24 @@ export async function performAndSynthesizeAudio(ssmlFragment: string, voiceKey: 
     }
 }
 
-export function createInitialCharacterPrompt(archetype: typeof ARCHETYPE_DATABASE.archetypes[0]): NanoBananaPrompt {
-    return {
-        scene_id: `${archetype.archetypeId}_portrait_v1`,
-        style: "chiaroscuro_painterly",
-        technical: { 
-            camera_angle: "eye_level_neutral", 
-            compositional_anchor: "painterly_renaissance_composition", 
-            focal_length_mm: 85, 
-            aperture: "f/2.2" 
-        },
-        materials: ["aged_velvet", "tarnished_bronze", "renaissance_oil_paint_texture"],
-        environment: { setting: "A dark, minimalist background to emphasize the subject." },
-        lighting: { 
-            style: "rembrandt_hatch_lighting", 
-            color_palette: "Warm, single-source light against oppressive darkness." 
-        },
-        characters: [{
-            character_id: archetype.archetypeId,
-            pose: 'neutral_stance',
-            expression: 'neutral_expression',
-            costume_id: `${archetype.archetypeId}_default_attire`
-        }],
-        props: archetype.visual_profile.prop ? [archetype.visual_profile.prop] : [],
-        quality: "4K_painterly_render"
-    };
-}
-
-
 export async function generateImageFromPrompt(prompt: NanoBananaPrompt): Promise<{ base64: string; mimeType: string; imageUrl: string }> {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const descriptiveTextPrompt = `Generate a high-fidelity, photo-realistic image. Adhere strictly to the following JSON specification for the scene's composition, character, and lighting: ${JSON.stringify(prompt, null, 2)}`;
+    
+    // UPLIFTED PROMPT GENERATION
+    const descriptiveTextPrompt = `
+${VISUAL_MANDATE.ZERO_DRIFT_HEADER}
+
+SCENE SPECIFICATION (JSON):
+${JSON.stringify(prompt, null, 2)}
+
+MANDATORY STYLE GUIDE:
+${VISUAL_MANDATE.STYLE}
+${VISUAL_MANDATE.MOOD}
+Technical: ${JSON.stringify(VISUAL_MANDATE.TECHNICAL)}
+
+NEGATIVE PROMPT:
+${VISUAL_MANDATE.NEGATIVE_PROMPT}
+    `.trim();
 
     const response = await ai.models.generateContent({
         model: IMAGE_MODEL,
@@ -173,12 +273,19 @@ export async function generateImageFromPrompt(prompt: NanoBananaPrompt): Promise
 
 export async function editImage(imageBase64: string, imageMimeType: string, editPrompt: string): Promise<{ base64: string; mimeType: string; imageUrl: string }> {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    const upliftedEditPrompt = `
+${VISUAL_MANDATE.ZERO_DRIFT_HEADER}
+EDIT INSTRUCTION: ${editPrompt}
+NEGATIVE PROMPT: ${VISUAL_MANDATE.NEGATIVE_PROMPT}
+    `.trim();
+
     const response = await ai.models.generateContent({
         model: IMAGE_EDIT_MODEL,
         contents: {
             parts: [
                 { inlineData: { data: imageBase64, mimeType: imageMimeType } },
-                { text: editPrompt },
+                { text: upliftedEditPrompt },
             ],
         },
         config: { responseModalities: [Modality.IMAGE] },
@@ -206,13 +313,13 @@ export async function continueStoryStream(callbacks: StreamCallbacks): Promise<v
             model: STORY_GENERATION_MODEL,
             config: {
                 systemInstruction: DIRECTOR_SYSTEM_INSTRUCTION,
-                tools: NARRATIVE_AGENT_TOOLS as Tool[],
+                tools: TOOLS,
+                toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.ANY } }, // Force tool use
             }
         });
 
         const stream = await chat.sendMessageStream({ message: directorPrompt });
 
-        let accumulatedSsml = '';
         let metadataPayload: AIPayloadMetadata = {
             agentInvocations: [],
             updatedNarrativeState: tempState,
@@ -221,127 +328,95 @@ export async function continueStoryStream(callbacks: StreamCallbacks): Promise<v
         };
 
         for await (const chunk of stream) {
-            accumulatedSsml += chunk.text;
-            onTextChunk(accumulatedSsml);
-
             const functionCalls = chunk.functionCalls;
             if (functionCalls && functionCalls.length > 0) {
                 for (const funcCall of functionCalls) {
+                    
+                    // Log the invocation
                     metadataPayload.agentInvocations.push({
-                        agentName: "Director",
-                        context: `Calling function ${funcCall.name}`,
+                        agentName: "MoMA_Director",
+                        context: `Calling ${funcCall.name}`,
                         action: JSON.stringify(funcCall.args),
                         retrievedTriples: []
                     });
 
-                    if (funcCall.name === "updateCharacterState") {
-                        const { characterId, property, value } = funcCall.args as { characterId: string, property: keyof typeof tempState.Characters[string], value: string };
-                        if (tempState.Characters[characterId]) {
-                            (tempState.Characters[characterId] as any)[property] = value;
+                    // 1. Narrative SSML Generator
+                    if (funcCall.name === "generateNarrativeSSML") {
+                        const args = funcCall.args as { ssml: string };
+                        onTextChunk(args.ssml);
+                    }
+
+                    // 2. KGoT State Updater
+                    if (funcCall.name === "updateKgotState") {
+                        const args = funcCall.args as { new_triples: string[] };
+                        if (args.new_triples) {
+                             args.new_triples.forEach(triple => {
+                                // Simple parsing of <Name, Prop, Value>
+                                const match = triple.match(/<([^,]+),\s*([^,]+),\s*([^>]+)>/);
+                                if (match) {
+                                    const name = match[1].trim();
+                                    const prop = match[2].trim();
+                                    const val = match[3].trim();
+                                    
+                                    // Map simple name to ID
+                                    const charId = NAME_TO_ID[name] || Object.keys(NAME_TO_ID).find(k => k.includes(name));
+                                    
+                                    if (charId && tempState.Characters[charId]) {
+                                        // Extremely basic state update logic
+                                        if (prop.includes("pose")) (tempState.Characters[charId] as any).pose = val;
+                                        if (prop.includes("mood")) (tempState.Characters[charId] as any).mood = val;
+                                        if (prop.includes("health")) (tempState.Characters[charId] as any).health = val;
+                                        // For 'arousal', 'trauma' etc, we could store them in a generic 'stats' object if we had one, 
+                                        // or mapped them to psych_state. For now, sticking to defined schema.
+                                        if (prop.includes("trauma") || prop.includes("arousal")) {
+                                            (tempState.Characters[charId] as any).psych_state = `${prop}: ${val}`;
+                                        }
+                                    } else if (name === "Tension") {
+                                         tempState.Tension = val;
+                                    }
+                                }
+                             });
                         }
                     }
 
+                    // 3. User Choices
                     if (funcCall.name === "generateUserChoices") {
-                        metadataPayload.userChoices = (funcCall.args as { choices: UserChoice[] }).choices;
+                        // The args might come in as { choices: [...] } if we updated the schema, 
+                        // or count if following the prompt instructions strictly.
+                        // Our TOOL definition uses 'choices' array.
+                        // If the model tries to use 'count', we might fail, but we defined the tool with 'choices'.
+                        // Let's handle the actual tool definition we wrote.
+                        if ((funcCall.args as any).choices) {
+                             metadataPayload.userChoices = (funcCall.args as any).choices;
+                        }
                     }
 
-                    if (funcCall.name === "generateSceneImagePrompt") {
-                        const prompt = funcCall.args as NanoBananaPrompt;
-                        metadataPayload.scenePrompt = prompt;
-                        if (prompt.edit_parameters?.base_image_id) {
+                    // 4. Nano Banana Visuals
+                    if (funcCall.name === "generateNanoBananaJSON") {
+                        const args = funcCall.args as { prompt: NanoBananaPrompt };
+                        metadataPayload.scenePrompt = args.prompt;
+                        if (args.prompt.edit_parameters?.base_image_id) {
                             metadataPayload.characterEdits?.push({
-                                base_image_id: prompt.edit_parameters.base_image_id,
-                                edit_prompt: prompt.edit_parameters.edit_prompt
+                                base_image_id: args.prompt.edit_parameters.base_image_id,
+                                edit_prompt: args.prompt.edit_parameters.edit_prompt
                             });
                         }
+                    }
+
+                    // 5. Self Critique (Optional Handler)
+                    if (funcCall.name === "selfCritique") {
+                        console.debug("Self Critique:", funcCall.args);
                     }
                 }
             }
         }
         
-        metadataPayload.updatedNarrativeState = tempState; // Final mutated state
+        metadataPayload.updatedNarrativeState = tempState;
         onMetadata(metadataPayload);
         onComplete();
 
     } catch (error) {
         console.error("Error during story generation stream:", error);
         onError(error instanceof Error ? error : new Error('An unknown streaming error occurred'));
-    }
-}
-
-
-export async function batchGenerateInitialPortraits(characterIds: string[]): Promise<Record<string, { imageUrl: string, errorMessage?: string }>> {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-    const archetypesToProcess = ARCHETYPE_DATABASE.archetypes.filter(arch => characterIds.includes(arch.archetypeId));
-
-    const portraitPromises = archetypesToProcess.map(archetype => {
-        const descriptiveTextPrompt = `Generate a high-fidelity, photo-realistic image. Adhere strictly to the following JSON specification: ${JSON.stringify(createInitialCharacterPrompt(archetype))}`;
-        
-        return ai.models.generateContent({
-            model: IMAGE_MODEL,
-            contents: { parts: [{ text: descriptiveTextPrompt }] },
-            config: { responseModalities: [Modality.IMAGE] },
-        });
-    });
-
-    if (portraitPromises.length === 0) return {};
-
-    const settledResults = await Promise.allSettled(portraitPromises);
-    
-    const results: Record<string, { imageUrl: string, errorMessage?: string }> = {};
-    
-    settledResults.forEach((result, index) => {
-        const archetype = archetypesToProcess[index];
-        const key = archetype.displayName.match(/\(([^)]+)\)/)?.[1] || archetype.displayName;
-
-        if (result.status === 'fulfilled') {
-            const response: GenerateContentResponse = result.value;
-            const imagePart = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
-
-            if (imagePart?.inlineData) {
-                const { data, mimeType } = imagePart.inlineData;
-                results[key] = { imageUrl: `data:${mimeType};base64,${data}` };
-            } else {
-                results[key] = { imageUrl: '', errorMessage: `No image data received for ${key}.` };
-            }
-        } else {
-            console.error(`Failed to generate portrait for ${key}:`, result.reason);
-            results[key] = { imageUrl: '', errorMessage: `Failed to generate portrait for ${key}.` };
-        }
-    });
-
-    return results;
-}
-
-export async function generateProceduralCharacter(seed: number, primaryArchetypeId: string): Promise<any> {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
-    // Script remains the same...
-    const proceduralScript = `...`; // Elided for brevity, same as before
-    
-    // Bug Fix: Instruct the model to return a JSON object directly for more reliable parsing.
-    const prompt = `
-You are a deterministic data generator. You will be given a Python script.
-Execute this script *exactly as written* using the code_execution tool.
-Do not modify it. Do not analyze it. Just execute it.
-The script will print a Python dictionary. Your task is to convert this dictionary into a valid JSON string and output ONLY that JSON string.
-
-Here is the script:
-\`\`\`python
-${proceduralScript}
-\`\`\`
-`;
-    try {
-        const result = await ai.models.generateContent({
-            model: 'gemini-2.5-pro',
-            contents: prompt,
-            config: { tools: [{ codeExecution: {} }] }
-        });
-        const jsonResult = JSON.parse(result.text);
-        return jsonResult;
-    } catch (e) {
-        console.error("Error running procedural generator:", e);
-        return { error: "Failed to execute or parse procedural script." };
     }
 }
